@@ -16,7 +16,7 @@ public class PrecioDAO {
         this.conexion = ConexionDB.getInstancia().getConexion();
     }
 
-    public boolean insertar(Precio precio) {
+    public boolean crear(Precio precio) {
         String sql = "INSERT INTO precios (tipo_vehiculo, precio_hora, precio_media, precio_dia, estacionamiento_id, fecha_actualizacion, activo) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?)";
         
@@ -32,7 +32,7 @@ public class PrecioDAO {
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
-            System.err.println("Error al insertar precio: " + e.getMessage());
+            System.err.println("Error al crear precio: " + e.getMessage());
             return false;
         }
     }

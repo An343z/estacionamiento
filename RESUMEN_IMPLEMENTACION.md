@@ -60,11 +60,13 @@ Cada DAO implementa operaciones CRUD básicas completas:
 | PromocionDAO | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | PensionDAO | ✓ | ✓ | **✓ AGREGADO** | ✓ | **✓ AGREGADO** | ✓ |
 | RegistroEntradaSalidaDAO | ✓ | ✓ | **✓ AGREGADO** | **✓ AGREGADO** | **✓ AGREGADO** | ✓ |
+| ConfiguracionDAO | ✓ | ✓ | ✓ | ✓ | ✓ | **✓ MEJORADO** |
+| NotificacionDAO | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ConexionDB | - | - | - | - | - | ✓ (Singleton) |
 
 ---
 
-### 3. **CONTROLLERS (Lógica de Negocio) - 8 Controllers Funcionales**
+### 3. **CONTROLLERS (Lógica de Negocio) - 10 Controllers Funcionales**
 
 Actúan como intermediarios entre DAO y futuras vistas:
 - Validación de datos básicos (null, vacío, formatos)
@@ -74,16 +76,20 @@ Actúan como intermediarios entre DAO y futuras vistas:
 
 **Controllers disponibles y estado:**
 
-| Controller | Correciones | Status |
-|-----------|-----------|--------|
-| EstacionamientoController | Validaciones mejoradas | ✓ Funcional |
-| UsuarioController | Limpiado (removido EstacionamientoDAO) | ✓ Funcional |
-| ClienteController | Métodos validados | ✓ Funcional |
-| VehiculoController | **✓ CORREGIDO** cambios: `getPatente()` en lugar de `getPlaca()` | ✓ Funcional |
-| CajonController | **✓ CORREGIDO** cambios: `insertar()` en lugar de `crear()`, implementación eficiente de búsquedas | ✓ Funcional |
-| PensionController | **✓ CORREGIDO** cambios: `obtenerTodos()`, métodos correctos, `getMonto()` en lugar de `getPrecio()` | ✓ Funcional |
-| RegistroController | Métodos validados | ✓ Funcional |
-| AdminController | Métodos validados | ✓ Funcional |
+| Controller | Estado | Validaciones |
+|-----------|--------|-------------|
+| EstacionamientoController | ✓ Funcional | Validaciones mejoradas |
+| UsuarioController | ✓ Funcional | Limpiado (removido EstacionamientoDAO) |
+| ClienteController | ✓ Funcional | Métodos validados |
+| VehiculoController | ✓ Funcional | **✓ CORREGIDO** cambios: `getPatente()` en lugar de `getPlaca()` |
+| CajonController | ✓ Funcional | **✓ CORREGIDO** cambios: `insertar()` en lugar de `crear()`, implementación eficiente de búsquedas |
+| PensionController | ✓ Funcional | **✓ CORREGIDO** cambios: `obtenerTodos()`, métodos correctos, `getMonto()` en lugar de `getPrecio()` |
+| RegistroController | ✓ Funcional | Métodos validados |
+| AdminController | ✓ Funcional | Métodos validados |
+| PrecioController | ✓ **NUEVO** | Validaciones de precios y tipos de vehículo |
+| PromocionController | ✓ **NUEVO** | Validaciones de promociones y fechas |
+| NotificacionController | ✓ **NUEVO** | Validaciones de notificaciones y usuarios |
+| ConfiguracionController | ✓ **NUEVO** | Validaciones de configuración del sistema |
 
 ---
 
@@ -147,6 +153,29 @@ Clase de pruebas independientes que verifica funcionalidad sin interfaz gráfica
    - ✓ Removido import innecesario: EstacionamientoDAO
    - ✓ Removidos métodos que dependían de EstacionamientoDAO
    - ✓ Mantiene solo operaciones de Usuario puro
+
+### **Nuevos Controllers Implementados:**
+
+1. **PrecioController**
+   - ✓ Implementado: CRUD completo para gestión de precios
+   - ✓ Validaciones: Rangos de precios, tipos de vehículo requeridos
+   - ✓ Métodos específicos: Obtener precios por tipo de vehículo y estacionamiento
+
+2. **PromocionController**
+   - ✓ Implementado: CRUD completo para gestión de promociones
+   - ✓ Validaciones: Porcentajes de descuento (0-100%), fechas de vigencia
+   - ✓ Métodos específicos: Obtener promociones activas y vigentes
+
+3. **NotificacionController**
+   - ✓ Implementado: CRUD completo para gestión de notificaciones
+   - ✓ Validaciones: Usuario requerido, título y mensaje obligatorios
+   - ✓ Métodos específicos: Marcar como leída, contar no leídas, enviar notificación
+
+4. **ConfiguracionController**
+   - ✓ Implementado: CRUD completo para configuración del sistema
+   - ✓ Validaciones: Clave requerida, valor no nulo
+   - ✓ Métodos específicos: Obtener por clave, actualizar valores por estacionamiento
+   - ✓ Agregado método `obtenerPorClaveYEstacionamiento()` en ConfiguracionDAO
 
 5. **Main.java**
    - ✓ Actualizado: Removidas referencias a Swing/UI

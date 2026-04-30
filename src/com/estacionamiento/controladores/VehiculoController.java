@@ -18,7 +18,7 @@ public class VehiculoController {
         if (vehiculo == null || vehiculo.getPatente() == null || vehiculo.getPatente().isEmpty()) {
             throw new Exception("Datos de vehículo inválidos");
         }
-        return vehiculoDAO.insertar(vehiculo);
+        return vehiculoDAO.crear(vehiculo);
     }
 
     public Vehiculo obtenerVehiculoPorId(int id) throws Exception {

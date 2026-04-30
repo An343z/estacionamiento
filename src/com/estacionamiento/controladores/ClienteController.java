@@ -21,7 +21,7 @@ public class ClienteController {
     // Métodos para Cliente
 
     public boolean crearCliente(Cliente cliente) {
-        return clienteDAO.insertar(cliente);
+        return clienteDAO.crear(cliente);
     }
 
     public Cliente obtenerCliente(int id) {
@@ -47,7 +47,7 @@ public class ClienteController {
     // Métodos para Vehículo
 
     public boolean crearVehiculo(Vehiculo vehiculo) {
-        return vehiculoDAO.insertar(vehiculo);
+        return vehiculoDAO.crear(vehiculo);
     }
 
     public Vehiculo obtenerVehiculo(int id) {

@@ -19,7 +19,7 @@ public class CajonController {
         if (cajon == null || cajon.getEstacionamientoId() <= 0) {
             throw new Exception("Datos del cajón inválidos");
         }
-        return cajonDAO.insertar(cajon);
+        return cajonDAO.crear(cajon);
     }
 
     public Cajon obtenerCajonPorId(int id) throws Exception {

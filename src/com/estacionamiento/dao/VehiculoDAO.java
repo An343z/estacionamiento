@@ -16,7 +16,7 @@ public class VehiculoDAO {
         this.conexion = ConexionDB.getInstancia().getConexion();
     }
 
-    public boolean insertar(Vehiculo vehiculo) {
+    public boolean crear(Vehiculo vehiculo) {
         String sql = "INSERT INTO vehiculos (patente, marca, modelo, color, cliente_id, tipo, fecha_registro, activo) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         
@@ -33,7 +33,7 @@ public class VehiculoDAO {
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
-            System.err.println("Error al insertar vehículo: " + e.getMessage());
+            System.err.println("Error al crear vehículo: " + e.getMessage());
             return false;
         }
     }

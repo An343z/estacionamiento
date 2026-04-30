@@ -16,7 +16,7 @@ public class ClienteDAO {
         this.conexion = ConexionDB.getInstancia().getConexion();
     }
 
-    public boolean insertar(Cliente cliente) {
+    public boolean crear(Cliente cliente) {
         String sql = "INSERT INTO clientes (nombre, apellido, email, telefono, numero_documento, tipo_documento, ciudad, fecha_registro, activo) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
@@ -34,7 +34,7 @@ public class ClienteDAO {
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
-            System.err.println("Error al insertar cliente: " + e.getMessage());
+            System.err.println("Error al crear cliente: " + e.getMessage());
             return false;
         }
     }

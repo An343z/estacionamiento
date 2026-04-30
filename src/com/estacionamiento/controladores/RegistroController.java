@@ -38,7 +38,7 @@ public class RegistroController {
     public boolean registrarEntrada(int vehiculoId, int cajonId, int estacionamientoId) {
         RegistroEntradaSalida registro = new RegistroEntradaSalida(vehiculoId, cajonId, LocalDateTime.now(), estacionamientoId);
         
-        if (registroDAO.insertar(registro)) {
+        if (registroDAO.crear(registro)) {
             // Cambiar estado del cajón a Ocupado
             cajonDAO.cambiarEstado(cajonId, "Ocupado");
             

@@ -15,7 +15,7 @@ public class EstacionamientoDAO {
         this.conexion = ConexionDB.getInstancia().getConexion();
     }
 
-    public boolean insertar(Estacionamiento estacionamiento) {
+    public boolean crear(Estacionamiento estacionamiento) {
         String sql = "INSERT INTO estacionamientos (nombre, direccion, telefono, email, total_cajones, cajones_disponibles, ciudad, provincia, codigo_postal) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
@@ -33,7 +33,7 @@ public class EstacionamientoDAO {
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
-            System.err.println("Error al insertar estacionamiento: " + e.getMessage());
+            System.err.println("Error al crear estacionamiento: " + e.getMessage());
             return false;
         }
     }

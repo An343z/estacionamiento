@@ -16,7 +16,7 @@ public class RegistroEntradaSalidaDAO {
         this.conexion = ConexionDB.getInstancia().getConexion();
     }
 
-    public boolean insertar(RegistroEntradaSalida registro) {
+    public boolean crear(RegistroEntradaSalida registro) {
         String sql = "INSERT INTO registros_entrada_salida (vehiculo_id, cajon_id, fecha_entrada, estado, estacionamiento_id) " +
                      "VALUES (?, ?, ?, ?, ?)";
         
@@ -30,7 +30,7 @@ public class RegistroEntradaSalidaDAO {
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
-            System.err.println("Error al insertar registro: " + e.getMessage());
+            System.err.println("Error al crear registro: " + e.getMessage());
             return false;
         }
     }

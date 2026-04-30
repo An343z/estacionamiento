@@ -82,7 +82,7 @@ public class AdminController {
             return false;
         }
         
-        return usuarioDAO.insertar(usuario);
+        return usuarioDAO.crear(usuario);
     }
 
     /**

@@ -21,7 +21,7 @@ public class EstacionamientoController {
     // Métodos para Estacionamiento
 
     public boolean crearEstacionamiento(Estacionamiento estacionamiento) {
-        return estacionamientoDAO.insertar(estacionamiento);
+        return estacionamientoDAO.crear(estacionamiento);
     }
 
     public Estacionamiento obtenerEstacionamiento(int id) {
@@ -39,7 +39,7 @@ public class EstacionamientoController {
     // Métodos para Cajón
 
     public boolean crearCajon(Cajon cajon) {
-        return cajonDAO.insertar(cajon);
+        return cajonDAO.crear(cajon);
     }
 
     public Cajon obtenerCajon(int id) {

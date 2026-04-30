@@ -33,7 +33,7 @@ public class UsuarioController {
      * @return true si se creó correctamente, false en caso contrario
      */
     public boolean crearUsuario(Usuario usuario) {
-        return usuarioDAO.insertar(usuario);
+        return usuarioDAO.crear(usuario);
     }
 
     /**

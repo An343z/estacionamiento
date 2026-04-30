@@ -16,7 +16,7 @@ public class PromocionDAO {
         this.conexion = ConexionDB.getInstancia().getConexion();
     }
 
-    public boolean insertar(Promocion promocion) {
+    public boolean crear(Promocion promocion) {
         String sql = "INSERT INTO promociones (nombre, descripcion, descuento_porcentaje, fecha_inicio, fecha_fin, tipo_vehiculo, estacionamiento_id, activa) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         
@@ -33,7 +33,7 @@ public class PromocionDAO {
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
-            System.err.println("Error al insertar promoción: " + e.getMessage());
+            System.err.println("Error al crear promoción: " + e.getMessage());
             return false;
         }
     }
@@ -53,18 +53,30 @@ public class PromocionDAO {
         }
         return null;
     }
-
-    public List<Promocion> obtenerActivasPorEstacionamiento(int estacionamientoId) {
+    public List<Promocion> obtenerTodos() {
         List<Promocion> promociones = new ArrayList<>();
-        String sql = "SELECT * FROM promociones WHERE estacionamiento_id = ? AND activa = true " +
-                     "AND NOW() BETWEEN fecha_inicio AND fecha_fin";
+        String sql = "SELECT * FROM promociones ORDER BY fecha_inicio DESC";
         
-        try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
-            pstmt.setInt(1, estacionamientoId);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    promociones.add(mapearResultSet(rs));
-                }
+        try (Statement stmt = conexion.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            while (rs.next()) {
+                promociones.add(mapearResultSet(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al obtener promociones: " + e.getMessage());
+        }
+        return promociones;
+    }
+    public List<Promocion> obtenerTodos() {
+        List<Promocion> promociones = new ArrayList<>();
+        String sql = "SELECT * FROM promociones ORDER BY fecha_inicio DESC";
+        
+        try (Statement stmt = conexion.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            while (rs.next()) {
+                promociones.add(mapearResultSet(rs));
             }
         } catch (SQLException e) {
             System.err.println("Error al obtener promociones: " + e.getMessage());

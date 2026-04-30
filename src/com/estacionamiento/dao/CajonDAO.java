@@ -15,7 +15,7 @@ public class CajonDAO {
         this.conexion = ConexionDB.getInstancia().getConexion();
     }
 
-    public boolean insertar(Cajon cajon) {
+    public boolean crear(Cajon cajon) {
         String sql = "INSERT INTO cajones (numero, tipo, estado, estacionamiento_id, activo) " +
                      "VALUES (?, ?, ?, ?, ?)";
         
@@ -29,7 +29,7 @@ public class CajonDAO {
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
-            System.err.println("Error al insertar cajón: " + e.getMessage());
+            System.err.println("Error al crear cajón: " + e.getMessage());
             return false;
         }
     }

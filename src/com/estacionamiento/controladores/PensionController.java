@@ -18,7 +18,7 @@ public class PensionController {
         if (pension == null) {
             throw new Exception("Pensión no puede ser nula");
         }
-        return pensionDAO.insertar(pension);
+        return pensionDAO.crear(pension);
     }
 
     public Pension obtenerPensionPorId(int id) throws Exception {

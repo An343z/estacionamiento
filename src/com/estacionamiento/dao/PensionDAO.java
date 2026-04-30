@@ -16,7 +16,7 @@ public class PensionDAO {
         this.conexion = ConexionDB.getInstancia().getConexion();
     }
 
-    public boolean insertar(Pension pension) {
+    public boolean crear(Pension pension) {
         String sql = "INSERT INTO pensiones (cliente_id, vehiculo_id, cajon_id, fecha_inicio, fecha_fin, monto, estado, estacionamiento_id) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         
@@ -33,7 +33,7 @@ public class PensionDAO {
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
-            System.err.println("Error al insertar pensión: " + e.getMessage());
+            System.err.println("Error al crear pensión: " + e.getMessage());
             return false;
         }
     }

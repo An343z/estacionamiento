@@ -18,11 +18,11 @@ public class UsuarioDAO {
     }
 
     /**
-     * Insertar un nuevo usuario
-     * @param usuario objeto Usuario con los datos a insertar
-     * @return true si se insertó correctamente, false en caso contrario
+     * Crear un nuevo usuario
+     * @param usuario objeto Usuario con los datos a crear
+     * @return true si se creó correctamente, false en caso contrario
      */
-    public boolean insertar(Usuario usuario) {
+    public boolean crear(Usuario usuario) {
         String sql = "INSERT INTO usuarios (nombre, apellido, email, usuario,contrasena, rol, estacionamiento_id, activo, fecha_creacion) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
