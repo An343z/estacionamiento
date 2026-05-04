@@ -13,9 +13,9 @@ public class ConexionDB {
     private Connection conexion;
     
     // Parámetros de conexión
-    private static final String URL = "jdbc:mysql://23.251.145.208:3306/estacionamiento_db";
-    private static final String USUARIO = "admin";
-    private static final String CONTRASENA = "LiprElO3RH1>khaO";
+    private static final String URL = "jdbc:mysql://localhost:3306/estacionamiento";
+    private static final String USUARIO = "root";
+    private static final String CONTRASENA = "";
     private static final String DRIVER = "com.mysql.cj.jdbc.Driver";
 
     /**
