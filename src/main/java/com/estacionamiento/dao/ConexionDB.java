@@ -3,6 +3,7 @@ package com.estacionamiento.dao;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import com.estacionamiento.utilidades.Logger;
 
 /**
  * Clase para manejar la conexión a la base de datos MySQL
@@ -46,15 +47,14 @@ public class ConexionDB {
             
             // Establecer conexión
             conexion = DriverManager.getConnection(URL, USUARIO, CONTRASENA);
-            System.out.println("✓ Conexión a la base de datos establecida correctamente");
+            Logger.info("Conexion a la base de datos establecida correctamente");
             return true;
         } catch (ClassNotFoundException e) {
-            System.err.println("✗ Error: Driver MySQL no encontrado");
+            Logger.error("Driver MySQL no encontrado", e);
             e.printStackTrace();
             return false;
         } catch (SQLException e) {
-            System.err.println("✗ Error: No se pudo conectar a la base de datos");
-            System.err.println("  Verifica que MySQL esté en ejecución y los parámetros de conexión");
+          Logger.error("No se pudo conectar a la base de datos", e);
             e.printStackTrace();
             return false;
         }
