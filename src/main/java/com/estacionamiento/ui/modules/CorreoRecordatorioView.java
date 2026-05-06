@@ -43,8 +43,12 @@ public class CorreoRecordatorioView extends VBox {
         });
 
         btnGuardar.setOnAction(e -> {
-            // Aquí se puede guardar el valor en la configuración
-            System.out.println("Días seleccionados para recordatorio: " + diasField.getText());
+            int dias = Integer.parseInt(diasField.getText());
+            com.estacionamiento.utilidades.ConfigManager config = com.estacionamiento.utilidades.ConfigManager.getInstancia();
+            config.setProperty("recordatorio.pension.dias", String.valueOf(dias));
+            config.guardar();
+            ayuda.setText("¡Guardado! Se enviarán recordatorios " + dias + " días antes de la expiración.");
+            ayuda.setStyle("-fx-font-size: 11px; -fx-text-fill: #22c55e; -fx-padding: 6 0 0 0;");
         });
 
         getChildren().addAll(titulo, subtitulo, diasField, ayuda, btnGuardar);

@@ -9,6 +9,25 @@ import java.util.Properties;
  * Clase para cargar y gestionar la configuración de la aplicación
  */
 public class ConfigManager {
+        /**
+         * Establece un valor de configuración en memoria
+         */
+        public void setProperty(String clave, String valor) {
+            propiedades.setProperty(clave, valor);
+        }
+
+        /**
+         * Guarda la configuración actual en el archivo
+         */
+        public void guardar() {
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(CONFIG_FILE)) {
+                propiedades.store(fos, "Configuración actualizada por la UI");
+                System.out.println("✓ Configuración guardada correctamente");
+            } catch (IOException e) {
+                System.err.println("✗ No se pudo guardar el archivo de configuración: " + CONFIG_FILE);
+                e.printStackTrace();
+            }
+        }
     private static ConfigManager instancia;
     private Properties propiedades;
     private static final String CONFIG_FILE = "src/recursos/config.properties";
