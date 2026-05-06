@@ -50,6 +50,7 @@ com\estacionamiento\dao\NotificacionDAO.class
 com\estacionamiento\dao\PrecioDAO.class
 com\estacionamiento\utilidades\TablaPersonalizada$2.class
 com\estacionamiento\controladores\EstacionamientoController.class
+com\estacionamiento\utilidades\Logger.class
 com\estacionamiento\ui\modules\PensionesModule.class
 com\estacionamiento\ui\modules\PromocionesModule.class
 com\estacionamiento\ui\login\LoginView.class
@@ -57,7 +58,6 @@ com\estacionamiento\ui\modules\EstacionamientosImpl.class
 com\estacionamiento\Main.class
 com\estacionamiento\dao\VehiculoDAO.class
 com\estacionamiento\modelos\FacturaRestaurante.class
-com\estacionamiento\ui\modules\EstacionamientosImpl$1.class
 com\estacionamiento\ui\main\Sidebar$Modulo.class
 com\estacionamiento\controladores\UsuarioController.class
 com\estacionamiento\dao\RegistroEntradaSalidaDAO.class
