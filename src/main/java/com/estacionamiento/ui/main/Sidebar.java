@@ -29,6 +29,7 @@ public class Sidebar extends VBox {
         PENSIONES        ("👥", "Pensiones",          "Servicios"),
         PRECIOS          ("💵", "Precios",            "Servicios"),
         PROMOCIONES      ("🎫", "Promociones",        "Servicios"),
+        CORREO_RECORDATORIO ("✉️", "Recordatorio Email", "Servicios"),
         NOTIFICACIONES   ("🔔", "Notificaciones",     "Sistema"),
         REPORTES         ("📈", "Reportes",           "Sistema"),
         CONFIGURACION    ("⚙️",  "Configuración",     "Sistema");

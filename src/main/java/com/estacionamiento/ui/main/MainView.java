@@ -102,6 +102,7 @@ public class MainView extends BorderPane {
             case PENSIONES        -> new PensionesModule();
             case PRECIOS          -> new PreciosModule();
             case PROMOCIONES      -> new PromocionesModule();
+            case CORREO_RECORDATORIO -> new com.estacionamiento.ui.modules.CorreoRecordatorioView();
             case NOTIFICACIONES   -> { actualizarBadge(); yield new NotificacionesModule(); }
             case REPORTES         -> new ReportesModule();
             case CONFIGURACION    -> new ConfiguracionModule();
