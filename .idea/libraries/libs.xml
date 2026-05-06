@@ -1,0 +1,18 @@
+<component name="libraryTable">
+  <library name="libs">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/target/libs/javafx-base-21.0.3-win.jar!/" />
+      <root url="jar://$PROJECT_DIR$/target/libs/javafx-base-21.0.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/target/libs/javafx-controls-21.0.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/target/libs/javafx-fxml-21.0.3-win.jar!/" />
+      <root url="jar://$PROJECT_DIR$/target/libs/javafx-fxml-21.0.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/target/libs/mysql-connector-j-8.3.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/target/libs/javafx-graphics-21.0.3-win.jar!/" />
+      <root url="jar://$PROJECT_DIR$/target/libs/protobuf-java-3.25.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/target/libs/javafx-graphics-21.0.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/target/libs/javafx-controls-21.0.3-win.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
