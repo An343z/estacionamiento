@@ -58,6 +58,7 @@ com\estacionamiento\ui\modules\EstacionamientosImpl.class
 com\estacionamiento\Main.class
 com\estacionamiento\dao\VehiculoDAO.class
 com\estacionamiento\modelos\FacturaRestaurante.class
+com\estacionamiento\ui\modules\EstacionamientosImpl$1.class
 com\estacionamiento\ui\main\Sidebar$Modulo.class
 com\estacionamiento\controladores\UsuarioController.class
 com\estacionamiento\dao\RegistroEntradaSalidaDAO.class
