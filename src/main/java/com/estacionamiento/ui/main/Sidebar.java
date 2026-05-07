@@ -1,17 +1,23 @@
 package com.estacionamiento.ui.main;
 
-import com.estacionamiento.ui.Session;
-import com.estacionamiento.ui.UI;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+
+import com.estacionamiento.ui.Session;
+import com.estacionamiento.ui.UI;
+
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 
 /**
  * Barra lateral de navegación.
@@ -49,9 +55,18 @@ public class Sidebar extends VBox {
 
     private void construirUI() {
         setStyle("-fx-background-color:" + UI.SIDEBAR + ";");
-        setPrefWidth(230); setMinWidth(230); setMaxWidth(230);
+        setPrefWidth(230); 
+        setMinWidth(230); 
+        setMaxWidth(230);
+        setSpacing(0);
 
-        getChildren().addAll(crearLogo(), crearInfoUsuario(), crearMenu(), spacer(), crearPanelCierre());
+        VBox logo = crearLogo();
+        VBox info = crearInfoUsuario();
+        ScrollPane scroll = crearScrollArea();
+        VBox cierre = crearPanelCierre();
+        
+        getChildren().addAll(logo, info, scroll, cierre);
+        VBox.setVgrow(scroll, Priority.ALWAYS);
     }
 
     private VBox crearLogo() {
@@ -85,6 +100,7 @@ public class Sidebar extends VBox {
 
     private VBox crearMenu() {
         VBox menu = new VBox(0);
+        menu.setPadding(new Insets(8, 0, 8, 0));
         String seccionActual = "";
 
         for (Modulo m : Modulo.values()) {
@@ -103,6 +119,24 @@ public class Sidebar extends VBox {
             menu.getChildren().add(btn);
         }
         return menu;
+    }
+
+    private ScrollPane crearScrollArea() {
+        VBox contenido = new VBox(0);
+        contenido.setPrefWidth(200);
+        contenido.setMinWidth(200);
+        contenido.setStyle("-fx-background-color:transparent;");
+        contenido.setPadding(new Insets(0));
+        contenido.getChildren().add(crearMenu());
+        
+        ScrollPane scroll = new ScrollPane(contenido);
+        scroll.setFitToWidth(true);
+        scroll.setFitToHeight(false);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scroll.setStyle("-fx-background:transparent;-fx-background-color:transparent;-fx-padding:0;-fx-control-inner-background:#12122a;");
+        scroll.setMinHeight(100);
+        return scroll;
     }
 
     private Button crearBoton(Modulo m) {
@@ -138,8 +172,10 @@ public class Sidebar extends VBox {
     }
 
     private VBox crearPanelCierre() {
-        VBox outer = new VBox(); outer.setPadding(new Insets(0, 12, 12, 12));
-        VBox inner = new VBox(8); inner.setPadding(new Insets(12));
+        VBox outer = new VBox(); 
+        outer.setPadding(new Insets(8, 12, 12, 12));
+        VBox inner = new VBox(8); 
+        inner.setPadding(new Insets(12));
         inner.setStyle("-fx-background-color:rgba(255,255,255,0.05);-fx-background-radius:10;");
         Label lbl = new Label("Sesión activa");
         lbl.setStyle("-fx-text-fill:rgba(255,255,255,0.4);-fx-font-size:10px;");

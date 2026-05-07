@@ -2,11 +2,44 @@ param(
     [switch]$Debug = $false
 )
 
-$JAVA_HOME = 'C:\Users\andre\.jdk\jdk-25.0.2'
-$env:JAVA_HOME = $JAVA_HOME
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $scriptDir
 
+# Detectar Java
+$javaExe = $null
+$javaHomeCandidates = @()
+if ($env:JAVA_HOME) { $javaHomeCandidates += $env:JAVA_HOME }
+$javaHomeCandidates += @(
+    'C:\Users\andre\.jdk\jdk-25.0.2',
+    'C:\Users\julie\.jdk',
+    'C:\Program Files\Java',
+    'C:\Program Files (x86)\Java',
+    'C:\Program Files\Apache NetBeans\jdk',
+    'C:\Program Files\Android\Android Studio\jbr',
+    'C:\Users\julie\AppData\Local\Programs\AdoptOpenJDK',
+    'C:\Users\julie\AppData\Local\Programs\Zulu'
+)
+foreach ($candidateHome in $javaHomeCandidates) {
+    if ($candidateHome -and (Test-Path (Join-Path $candidateHome 'bin\java.exe'))) {
+        $javaExe = Join-Path $candidateHome 'bin\java.exe'
+        break
+    }
+    if ($candidateHome -and (Test-Path (Join-Path $candidateHome 'java.exe'))) {
+        $javaExe = Join-Path $candidateHome 'java.exe'
+        break
+    }
+}
+if (-not $javaExe) {
+    $command = Get-Command java.exe -ErrorAction SilentlyContinue
+    if ($command) { $javaExe = $command.Source }
+}
+if (-not $javaExe) {
+    Write-Host "Error: No se encontro java.exe. Configure JAVA_HOME o agregue Java al PATH." -ForegroundColor Red
+    Write-Host "Sugerencia: puede usar una ruta Java instalada, por ejemplo: 'C:\Program Files\Apache NetBeans\jdk'" -ForegroundColor Yellow
+    exit 1
+}
+
+Write-Host "Usando Java: $javaExe" -ForegroundColor Green
 Write-Host "===============================================" -ForegroundColor Cyan
 Write-Host "  P PARK - Sistema de Gestion de Estacionamiento" -ForegroundColor Cyan
 Write-Host "===============================================" -ForegroundColor Cyan
@@ -35,7 +68,19 @@ Write-Host ""
 # Compilar si no existe el JAR
 if (-not (Test-Path "target\ppark-1.0.0.jar")) {
     Write-Host "Compilando proyecto..." -ForegroundColor Yellow
-    & "C:\Users\andre\.maven\maven-3.9.15\bin\mvn.cmd" clean package -q
+
+    $mavenCmd = $null
+    $command = Get-Command mvn.cmd -ErrorAction SilentlyContinue
+    if (-not $command) { $command = Get-Command mvn -ErrorAction SilentlyContinue }
+    if ($command) { $mavenCmd = $command.Source }
+    elseif (Test-Path 'C:\Users\andre\.maven\maven-3.9.15\bin\mvn.cmd') { $mavenCmd = 'C:\Users\andre\.maven\maven-3.9.15\bin\mvn.cmd' }
+
+    if (-not $mavenCmd) {
+        Write-Host "Error: No se encontro Maven. Instale Maven o agregue mvn al PATH." -ForegroundColor Red
+        exit 1
+    }
+
+    & $mavenCmd clean package -q
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Error en compilacion" -ForegroundColor Red
         exit 1
@@ -58,7 +103,7 @@ if ($Debug) {
     Write-Host "Argumentos: $($javaArgs -join ' ')" -ForegroundColor Gray
 }
 
-& "$JAVA_HOME\bin\java.exe" $javaArgs
+& $javaExe $javaArgs
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""

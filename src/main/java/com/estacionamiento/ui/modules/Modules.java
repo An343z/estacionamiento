@@ -4,6 +4,8 @@ import com.estacionamiento.controladores.*;
 import com.estacionamiento.modelos.*;
 import com.estacionamiento.ui.Session;
 import com.estacionamiento.ui.UI;
+import com.estacionamiento.utilidades.GeneradorPDF;
+import com.estacionamiento.utilidades.GeneradorExcel;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -31,6 +33,8 @@ class DashboardImpl extends ScrollPane {
     private final EstacionamientoController estCtrl = new EstacionamientoController();
     private final RegistroController regCtrl = new RegistroController();
     private final PensionController penCtrl  = new PensionController();
+    private final GeneradorPDF pdfGen = new GeneradorPDF(System.getProperty("user.dir") + "/reportes");
+    private final GeneradorExcel excelGen = new GeneradorExcel(System.getProperty("user.dir") + "/reportes");
 
     DashboardImpl() {
         setFitToWidth(true);
@@ -51,7 +55,10 @@ class DashboardImpl extends ScrollPane {
         // Pensiones activas
         VBox secPensiones = crearSeccionPensiones();
 
-        contenido.getChildren().addAll(bienvenida, stats, secPensiones);
+        // Reportes
+        VBox secReportes = crearSeccionReportes();
+
+        contenido.getChildren().addAll(bienvenida, stats, secPensiones, secReportes);
         setContent(contenido);
     }
 
@@ -147,6 +154,42 @@ class DashboardImpl extends ScrollPane {
         }
 
         card.getChildren().add(0, titulo);
+        return card;
+    }
+
+    private VBox crearSeccionReportes() {
+        VBox card = new VBox(12);
+        card.setStyle(UI.CARD);
+        card.setPadding(new Insets(20));
+
+        Label titulo = new Label("Reportes de Base de Datos");
+        titulo.setFont(Font.font("System", FontWeight.BOLD, 13));
+
+        HBox botones = new HBox(12);
+        botones.setAlignment(Pos.CENTER_LEFT);
+
+        Button btnPDF = UI.btnPrimario("📄 Generar PDF");
+        btnPDF.setOnAction(e -> {
+            boolean exito = pdfGen.generarReporteCompletoBD();
+            if (exito) {
+                UI.mostrarInfo("Éxito", "PDF generado correctamente");
+            } else {
+                UI.mostrarError("Error", "No se pudo generar el PDF");
+            }
+        });
+
+        Button btnExcel = UI.btnPrimario("📊 Generar Excel");
+        btnExcel.setOnAction(e -> {
+            boolean exito = excelGen.generarReporteCompletoBD();
+            if (exito) {
+                UI.mostrarInfo("Éxito", "Excel generado correctamente");
+            } else {
+                UI.mostrarError("Error", "No se pudo generar el Excel");
+            }
+        });
+
+        botones.getChildren().addAll(btnPDF, btnExcel);
+        card.getChildren().addAll(titulo, botones);
         return card;
     }
 }

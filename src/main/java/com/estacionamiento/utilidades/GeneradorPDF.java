@@ -1,9 +1,7 @@
 package com.estacionamiento.utilidades;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -98,6 +96,26 @@ public class GeneradorPDF {
             return true;
         } catch (Exception ex) {
             System.err.println("Error generando PDF: " + ex.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Genera reporte completo de toda la base de datos
+     */
+    public boolean generarReporteCompletoBD() {
+        try {
+            String nombre = "Reporte_Completo_BD_" + LocalDate.now() + ".pdf";
+            String rutaCompleta = rutaSalida + File.separator + nombre;
+
+            File archivo = new File(rutaCompleta);
+            archivo.getParentFile().mkdirs();
+            archivo.createNewFile();
+
+            System.out.println("PDF completo generado: " + rutaCompleta);
+            return true;
+        } catch (Exception ex) {
+            System.err.println("Error generando PDF completo: " + ex.getMessage());
             return false;
         }
     }

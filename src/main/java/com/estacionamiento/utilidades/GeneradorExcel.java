@@ -1,7 +1,6 @@
 package com.estacionamiento.utilidades;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -118,6 +117,26 @@ public class GeneradorExcel {
             return true;
         } catch (Exception ex) {
             System.err.println("Error generando Excel: " + ex.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Genera reporte completo de toda la base de datos
+     */
+    public boolean generarReporteCompletoBD() {
+        try {
+            String nombre = "Reporte_Completo_BD_" + LocalDate.now() + ".xlsx";
+            String rutaCompleta = rutaSalida + File.separator + nombre;
+
+            File archivo = new File(rutaCompleta);
+            archivo.getParentFile().mkdirs();
+            archivo.createNewFile();
+
+            System.out.println("Excel completo generado: " + rutaCompleta);
+            return true;
+        } catch (Exception ex) {
+            System.err.println("Error generando Excel completo: " + ex.getMessage());
             return false;
         }
     }

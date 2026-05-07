@@ -1,16 +1,15 @@
 package com.estacionamiento.controladores;
 
-import com.estacionamiento.dao.RegistroEntradaSalidaDAO;
-import com.estacionamiento.dao.PrecioDAO;
-import com.estacionamiento.dao.CajonDAO;
-import com.estacionamiento.dao.EstacionamientoDAO;
-import com.estacionamiento.modelos.RegistroEntradaSalida;
-import com.estacionamiento.modelos.Precio;
-import com.estacionamiento.modelos.Cajon;
-import com.estacionamiento.modelos.Estacionamiento;
-import com.estacionamiento.utilidades.DateUtils;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.estacionamiento.dao.CajonDAO;
+import com.estacionamiento.dao.EstacionamientoDAO;
+import com.estacionamiento.dao.PrecioDAO;
+import com.estacionamiento.dao.RegistroEntradaSalidaDAO;
+import com.estacionamiento.modelos.Precio;
+import com.estacionamiento.modelos.RegistroEntradaSalida;
+import com.estacionamiento.utilidades.DateUtils;
 
 /**
  * Controlador para gestionar registros de entrada y salida
@@ -123,5 +122,15 @@ public class RegistroController {
 
     public double obtenerIngresoDelDia(int estacionamientoId, LocalDateTime fecha) {
         return registroDAO.obtenerIngresoDelDia(estacionamientoId, fecha);
+    }
+
+    public double obtenerIngresoDeLosUltimosDias(int estacionamientoId, int dias) {
+        double total = 0;
+        LocalDateTime now = LocalDateTime.now();
+        for (int i = 0; i < dias; i++) {
+            LocalDateTime fecha = now.minusDays(i);
+            total += registroDAO.obtenerIngresoDelDia(estacionamientoId, fecha);
+        }
+        return total;
     }
 }
