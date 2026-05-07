@@ -16,28 +16,36 @@ public class VehiculoDAO {
         this.conexion = ConexionDB.getInstancia().getConexion();
     }
 
-    public boolean crear(Vehiculo vehiculo) {
-        String sql = "INSERT INTO vehiculos (patente, marca, modelo, color, cliente_id, tipo, fecha_registro, activo) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+public boolean crear(Vehiculo vehiculo) {
+    String sql = "INSERT INTO vehiculos (patente, marca, modelo, color, cliente_id, tipo, fecha_registro, activo) " +
+                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    
+    try (PreparedStatement pstmt = conexion.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        pstmt.setString(1, vehiculo.getPatente());
+        pstmt.setString(2, vehiculo.getMarca());
+        pstmt.setString(3, vehiculo.getModelo());
+        pstmt.setString(4, vehiculo.getColor());
+        pstmt.setInt(5, vehiculo.getClienteId());
+        pstmt.setString(6, vehiculo.getTipo());
+        pstmt.setTimestamp(7, Timestamp.valueOf(LocalDateTime.now()));
+        pstmt.setBoolean(8, vehiculo.isActivo());
         
-        try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
-            pstmt.setString(1, vehiculo.getPatente());
-            pstmt.setString(2, vehiculo.getMarca());
-            pstmt.setString(3, vehiculo.getModelo());
-            pstmt.setString(4, vehiculo.getColor());
-            pstmt.setInt(5, vehiculo.getClienteId());
-            pstmt.setString(6, vehiculo.getTipo());
-            pstmt.setTimestamp(7, Timestamp.valueOf(LocalDateTime.now()));
-            pstmt.setBoolean(8, vehiculo.isActivo());
-            
-            pstmt.executeUpdate();
-            return true;
-        } catch (SQLException e) {
-            System.err.println("Error al crear vehículo: " + e.getMessage());
-            return false;
+        int affectedRows = pstmt.executeUpdate();
+        
+        if (affectedRows > 0) {
+            try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    vehiculo.setId(rs.getInt(1));
+                }
+            }
         }
+        
+        return true;
+    } catch (SQLException e) {
+        System.err.println("Error al crear vehículo: " + e.getMessage());
+        return false;
     }
-
+}
     public Vehiculo obtenerPorId(int id) {
         String sql = "SELECT * FROM vehiculos WHERE id = ?";
         

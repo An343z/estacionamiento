@@ -16,29 +16,37 @@ public class ClienteDAO {
         this.conexion = ConexionDB.getInstancia().getConexion();
     }
 
-    public boolean crear(Cliente cliente) {
-        String sql = "INSERT INTO clientes (nombre, apellido, email, telefono, numero_documento, tipo_documento, ciudad, fecha_registro, activo) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+   public boolean crear(Cliente cliente) {
+    String sql = "INSERT INTO clientes (nombre, apellido, email, telefono, numero_documento, tipo_documento, ciudad, fecha_registro, activo) " +
+                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    
+    try (PreparedStatement pstmt = conexion.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        pstmt.setString(1, cliente.getNombre());
+        pstmt.setString(2, cliente.getApellido());
+        pstmt.setString(3, cliente.getEmail());
+        pstmt.setString(4, cliente.getTelefono());
+        pstmt.setString(5, cliente.getNumeroDocumento());
+        pstmt.setString(6, cliente.getTipoDocumento());
+        pstmt.setString(7, cliente.getCiudad());
+        pstmt.setTimestamp(8, Timestamp.valueOf(LocalDateTime.now()));
+        pstmt.setBoolean(9, cliente.isActivo());
         
-        try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
-            pstmt.setString(1, cliente.getNombre());
-            pstmt.setString(2, cliente.getApellido());
-            pstmt.setString(3, cliente.getEmail());
-            pstmt.setString(4, cliente.getTelefono());
-            pstmt.setString(5, cliente.getNumeroDocumento());
-            pstmt.setString(6, cliente.getTipoDocumento());
-            pstmt.setString(7, cliente.getCiudad());
-            pstmt.setTimestamp(8, Timestamp.valueOf(LocalDateTime.now()));
-            pstmt.setBoolean(9, cliente.isActivo());
-            
-            pstmt.executeUpdate();
-            return true;
-        } catch (SQLException e) {
-            System.err.println("Error al crear cliente: " + e.getMessage());
-            return false;
+        int affectedRows = pstmt.executeUpdate();
+        
+        if (affectedRows > 0) {
+            try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    cliente.setId(rs.getInt(1));
+                }
+            }
         }
+        
+        return true;
+    } catch (SQLException e) {
+        System.err.println("Error al crear cliente: " + e.getMessage());
+        return false;
     }
-
+}
     public Cliente obtenerPorId(int id) {
         String sql = "SELECT * FROM clientes WHERE id = ?";
         
