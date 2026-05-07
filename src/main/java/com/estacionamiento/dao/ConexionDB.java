@@ -13,10 +13,10 @@ public class ConexionDB {
     private static ConexionDB instancia;
     private Connection conexion;
     
-    // Parámetros de conexión
-    private static final String URL = "jdbc:mysql://localhost:3306/estacionamiento";
-    private static final String USUARIO = "root";
-    private static final String CONTRASENA = "";
+    // Parámetros de conexión - Google Cloud SQL
+    private static final String URL = "jdbc:mysql://34.63.132.87:3306/estacionamiento?useSSL=true&requireSSL=true&serverTimezone=America/Mexico_City&allowPublicKeyRetrieval=true";
+    private static final String USUARIO = "estacionamiento";
+    private static final String CONTRASENA = "J@Q^l1SKvD:>7JzR";
     private static final String DRIVER = "com.mysql.cj.jdbc.Driver";
 
     /**
