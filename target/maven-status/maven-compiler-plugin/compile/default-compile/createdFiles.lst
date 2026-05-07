@@ -7,10 +7,13 @@ com\estacionamiento\modelos\Restaurante.class
 com\estacionamiento\utilidades\GraficoPastel.class
 com\estacionamiento\modelos\Promocion.class
 com\estacionamiento\ui\modules\ReportesModule.class
+com\estacionamiento\utilidades\EmailSender.class
+com\estacionamiento\ui\main\Sidebar.class
 com\estacionamiento\MainTest.class
 com\estacionamiento\ui\modules\NotificacionesImpl.class
 com\estacionamiento\ui\modules\VehiculosImpl$1.class
 com\estacionamiento\ui\modules\ClientesModule.class
+com\estacionamiento\ui\modules\CorreoRecordatorioView.class
 com\estacionamiento\modelos\ConvenioRestaurante.class
 com\estacionamiento\ui\modules\PensionesImpl$3.class
 com\estacionamiento\ui\modules\EstacionamientosImpl$2.class
@@ -57,7 +60,10 @@ com\estacionamiento\ui\modules\EstacionamientosImpl.class
 com\estacionamiento\Main.class
 com\estacionamiento\dao\VehiculoDAO.class
 com\estacionamiento\modelos\FacturaRestaurante.class
+com\estacionamiento\utilidades\EmailSender$1.class
 com\estacionamiento\ui\modules\EstacionamientosImpl$1.class
+com\estacionamiento\utilidades\RecordatorioPensionTask.class
+com\estacionamiento\ui\main\Sidebar$Modulo.class
 com\estacionamiento\controladores\UsuarioController.class
 com\estacionamiento\dao\RegistroEntradaSalidaDAO.class
 com\estacionamiento\ui\modules\ClientesImpl.class
@@ -78,6 +84,7 @@ com\estacionamiento\modelos\Estacionamiento.class
 com\estacionamiento\ui\modules\ReportesImpl.class
 com\estacionamiento\ui\modules\EstacionamientosModule.class
 com\estacionamiento\modelos\Cajon.class
+com\estacionamiento\ui\main\MainView.class
 com\estacionamiento\modelos\Usuario.class
 com\estacionamiento\utilidades\Constantes.class
 com\estacionamiento\modelos\ClienteRestaurante.class
@@ -91,6 +98,7 @@ com\estacionamiento\controladores\RegistroController.class
 com\estacionamiento\dao\EstacionamientoDAO.class
 com\estacionamiento\modelos\Configuracion.class
 com\estacionamiento\ui\Session.class
+com\estacionamiento\App.class
 com\estacionamiento\modelos\RegistroUsoRestaurante.class
 com\estacionamiento\modelos\RegistroEntradaSalida.class
 com\estacionamiento\ui\modules\RegistrosImpl$1.class

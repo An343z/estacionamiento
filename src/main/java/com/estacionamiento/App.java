@@ -2,6 +2,7 @@ package com.estacionamiento;
 
 import com.estacionamiento.ui.login.LoginView;
 import com.estacionamiento.ui.main.MainView;
+
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -24,6 +25,13 @@ public class App extends Application {
         stage.setMinHeight(650);
         stage.setWidth(1280);
         stage.setHeight(760);
+
+        // Enviar recordatorios de pensión al iniciar la app
+        try {
+            com.estacionamiento.utilidades.RecordatorioPensionTask.enviarRecordatorios();
+        } catch (Exception ex) {
+            System.err.println("Error al enviar recordatorios de pensión: " + ex.getMessage());
+        }
 
         mostrarLogin();
         stage.show();
