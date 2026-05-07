@@ -79,6 +79,22 @@ public class ClienteDAO {
         return null;
     }
 
+    public Cliente obtenerPorTelefono(String telefono) {
+        String sql = "SELECT * FROM clientes WHERE telefono = ?";
+        
+        try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
+            pstmt.setString(1, telefono);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapearResultSet(rs);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al obtener cliente por teléfono: " + e.getMessage());
+        }
+        return null;
+    }
+
     public List<Cliente> obtenerTodos() {
         List<Cliente> clientes = new ArrayList<>();
         String sql = "SELECT * FROM clientes WHERE activo = true ORDER BY nombre";

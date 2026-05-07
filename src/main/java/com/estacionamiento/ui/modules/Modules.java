@@ -9,6 +9,8 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
@@ -57,7 +59,7 @@ class DashboardImpl extends ScrollPane {
         HBox hb = new HBox(16);
         try {
             Session s = Session.getInstance();
-            Integer estId = s.getEstacionamientoId();
+            Integer estId = s.getEstacionamientoActualId();
 
             int disponibles = 0, ocupados = 0, totalCajones = 0;
             List<Estacionamiento> ests;
@@ -112,7 +114,11 @@ class DashboardImpl extends ScrollPane {
 
         try {
             Session s = Session.getInstance();
-            Integer estId = s.getEstacionamientoId() != null ? s.getEstacionamientoId() : 1;
+            Integer estId = s.getEstacionamientoActualId();
+            if (estId == null) {
+                card.getChildren().addAll(titulo, UI.panelVacio("👥", "Seleccione un estacionamiento para ver pensiones"));
+                return card;
+            }
             List<Pension> pensiones = penCtrl.obtenerPensionesActivas(estId);
 
             if (pensiones.isEmpty()) {
@@ -323,7 +329,7 @@ class VehiculosImpl extends VBox {
         datos = FXCollections.observableArrayList(); tabla.setItems(datos);
         VBox.setVgrow(tabla, Priority.ALWAYS);
 
-        col("Patente", "patente", 120); col("Marca", "marca", 120);
+        col("ID", "id", 60); col("Patente", "patente", 120); col("Marca", "marca", 120);
         col("Modelo", "modelo", 120); col("Color", "color", 100);
         col("Tipo", "tipo", 100);
 
@@ -455,8 +461,11 @@ class CajonesImpl extends VBox {
             @Override protected void updateItem(String val, boolean empty){
                 super.updateItem(val,empty); if(empty||val==null){setGraphic(null);return;}
                 String estilo = switch(val){
-                    case "Disponible" -> UI.badgeGreen();
-                    case "Ocupado"    -> UI.badgeRed();
+                    case "libre" -> UI.badgeGreen();
+                    case "ocupado"    -> UI.badgeRed();
+                    case "reservado" -> UI.badgeAmber();
+                    case "pensionado" -> UI.badgeBlue();
+                    case "fuera de servicio" -> UI.badgeGray();
                     default           -> UI.badgeGray();
                 };
                 setGraphic(UI.badge(val,estilo));
@@ -490,7 +499,11 @@ class CajonesImpl extends VBox {
     private void cargar() {
         try {
             Session s = Session.getInstance();
-            int estId = s.getEstacionamientoId() != null ? s.getEstacionamientoId() : 1;
+            Integer estId = s.getEstacionamientoActualId();
+            if (estId == null) {
+                UI.mostrarError("Error", "Debe seleccionar un estacionamiento");
+                return;
+            }
             List<Cajon> lista = ctrl.obtenerCajonesPorEstacionamiento(estId);
             datos.setAll(lista);
             actualizarGrid(lista);
@@ -518,9 +531,11 @@ class CajonesImpl extends VBox {
         String base = "-fx-background-radius:8;-fx-border-radius:8;-fx-border-width:2;";
         if (estado == null) return base + "-fx-background-color:#f1f5f9;-fx-border-color:#e2e8f0;";
         return switch(estado) {
-            case "Disponible"   -> base+"-fx-background-color:#f0fdf4;-fx-border-color:#86efac;-fx-text-fill:#16a34a;";
-            case "Ocupado"      -> base+"-fx-background-color:#fff1f2;-fx-border-color:#fca5a5;-fx-text-fill:#ef4444;";
-            case "Mantenimiento"-> base+"-fx-background-color:#fff7ed;-fx-border-color:#fb923c;-fx-text-fill:#ea580c;";
+            case "libre"   -> base+"-fx-background-color:#f0fdf4;-fx-border-color:#86efac;-fx-text-fill:#16a34a;";
+            case "ocupado"      -> base+"-fx-background-color:#fff1f2;-fx-border-color:#fca5a5;-fx-text-fill:#ef4444;";
+            case "reservado"-> base+"-fx-background-color:#fef3c7;-fx-border-color:#fbbf24;-fx-text-fill:#d97706;";
+            case "pensionado"-> base+"-fx-background-color:#e0f2fe;-fx-border-color:#38bdf8;-fx-text-fill:#0284c7;";
+            case "fuera de servicio"-> base+"-fx-background-color:#f3f4f6;-fx-border-color:#9ca3af;-fx-text-fill:#6b7280;";
             default             -> base+"-fx-background-color:#f8fafc;-fx-border-color:#e2e8f0;";
         };
     }
@@ -537,7 +552,7 @@ class CajonesImpl extends VBox {
         ComboBox<String> comboTipo  = UI.combo();
         comboTipo.getItems().addAll("Normal","Minusválido","Preferente"); comboTipo.setValue("Normal");
         ComboBox<String> comboEst = UI.combo();
-        comboEst.getItems().addAll("Disponible","Ocupado","Mantenimiento"); comboEst.setValue("Disponible");
+        comboEst.getItems().addAll("libre","ocupado","reservado","pensionado","fuera de servicio"); comboEst.setValue("libre");
 
         if (editar!=null){ fNum.setText(String.valueOf(editar.getNumero())); fNum.setDisable(true);
             if(editar.getTipo()!=null) comboTipo.setValue(editar.getTipo());
@@ -553,7 +568,11 @@ class CajonesImpl extends VBox {
         guardar.setOnAction(e -> {
             try {
                 Session s = Session.getInstance();
-                int estId = s.getEstacionamientoId()!=null ? s.getEstacionamientoId() : 1;
+                Integer estId = s.getEstacionamientoActualId();
+                if (estId == null) {
+                    UI.setError(err, "Debe seleccionar un estacionamiento");
+                    return;
+                }
                 int num = Integer.parseInt(fNum.getText().trim());
                 Cajon c = editar!=null ? editar : new Cajon(num, comboTipo.getValue(), comboEst.getValue(), estId);
                 c.setTipo(comboTipo.getValue()); c.setEstado(comboEst.getValue());
@@ -746,8 +765,8 @@ class RegistrosImpl extends VBox {
         comboTipo.getItems().addAll("Auto","Moto","Camioneta"); comboTipo.setValue("Auto");
         fVehId.setPrefWidth(140); fCajId.setPrefWidth(140);
 
-        Button btnEntrada=UI.btnPrimario("🟢 Registrar Entrada");
-        Button btnSalida=new Button("🔴 Registrar Salida");
+        Button btnEntrada=UI.btnPrimario("➕ Registrar Entrada");
+        Button btnSalida=new Button("✖ Registrar Salida");
         btnSalida.setStyle("-fx-background-color:#ef4444;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:13px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:9 18;");
 
         Label err=UI.errorLabel(); Label ok=UI.errorLabel();
@@ -759,9 +778,10 @@ class RegistrosImpl extends VBox {
                 int vehId=Integer.parseInt(fVehId.getText().trim());
                 int cajId=Integer.parseInt(fCajId.getText().trim());
                 Session s=Session.getInstance();
-                int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
+                Integer estId=s.getEstacionamientoActualId();
+                if(estId==null){ UI.setError(err,"Debe seleccionar un estacionamiento"); return; }
                 boolean res=ctrl.registrarEntrada(vehId,cajId,estId);
-                if(res){ ok.setText("✅  Entrada registrada correctamente."); ok.setVisible(true); ok.setManaged(true); cargar(); }
+                if(res){ ok.setText("✅ Entrada registrada correctamente."); ok.setVisible(true); ok.setManaged(true); cargar(); }
                 else UI.setError(err,"No se pudo registrar. ¿Cajón ya ocupado?");
             }catch(NumberFormatException ex){ UI.setError(err,"Los IDs deben ser números."); }
         });
@@ -771,9 +791,10 @@ class RegistrosImpl extends VBox {
             try{
                 int vehId=Integer.parseInt(fVehId.getText().trim());
                 Session s=Session.getInstance();
-                int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
+                Integer estId=s.getEstacionamientoActualId();
+                if(estId==null){ UI.setError(err,"Debe seleccionar un estacionamiento"); return; }
                 RegistroEntradaSalida reg=ctrl.registrarSalida(vehId,comboTipo.getValue(),estId);
-                if(reg!=null){ ok.setText("✅  Salida registrada. Monto: $"+String.format("%.2f",reg.getMonto())); ok.setVisible(true); ok.setManaged(true); cargar(); }
+                if(reg!=null){ ok.setText("✅ Salida registrada. Monto: $"+String.format("%.2f",reg.getMonto())); ok.setVisible(true); ok.setManaged(true); cargar(); }
                 else UI.setError(err,"No hay entrada activa para ese vehículo.");
             }catch(NumberFormatException ex){ UI.setError(err,"El ID debe ser número."); }
         });
@@ -782,17 +803,23 @@ class RegistrosImpl extends VBox {
             UI.grupoCampo("ID Vehículo",fVehId),
             UI.grupoCampo("ID Cajón",fCajId),
             UI.grupoCampo("Tipo vehículo",comboTipo),
-            btnEntrada, btnSalida);
-        fila.setAlignment(Pos.BOTTOM_LEFT);
+            btnEntrada,
+            btnSalida
+        );
+        fila.setAlignment(Pos.CENTER_LEFT);
 
-        card.getChildren().addAll(titulo, fila, err, ok);
+        card.getChildren().addAll(titulo,fila,err,ok);
         return card;
     }
 
     private void cargar(){
         try{
             Session s=Session.getInstance();
-            int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
+            Integer estId = s.getEstacionamientoActualId();
+            if (estId == null) {
+                UI.mostrarError("Error", "Debe seleccionar un estacionamiento");
+                return;
+            }
             datos.setAll(ctrl.obtenerRegistrosPorEstacionamiento(estId));
         }catch(Exception e){ UI.mostrarError("Error",e.getMessage()); }
     }
@@ -804,6 +831,9 @@ class RegistrosImpl extends VBox {
 class PensionesImpl extends VBox {
 
     private final PensionController ctrl = new PensionController();
+    private final ClienteController cliCtrl = new ClienteController();
+    private final VehiculoController vehCtrl = new VehiculoController();
+    private final CajonController cajonCtrl = new CajonController();
     private ObservableList<Pension> datos;
     private TableView<Pension> tabla;
 
@@ -855,7 +885,15 @@ class PensionesImpl extends VBox {
     }
 
     private void cargar(){
-        try{ datos.setAll(ctrl.obtenerTodasPensiones()); }
+        try{
+            Session s = Session.getInstance();
+            Integer estId = s.getEstacionamientoActualId();
+            if (estId == null) {
+                datos.clear();
+                return;
+            }
+            datos.setAll(ctrl.obtenerPensionesActivas(estId));
+        }
         catch(Exception e){ UI.mostrarError("Error",e.getMessage()); }
     }
 
@@ -899,7 +937,11 @@ class PensionesImpl extends VBox {
                 int cajId=Integer.parseInt(fCaj.getText().trim());
                 double monto=Double.parseDouble(fMonto.getText().trim());
                 Session s=Session.getInstance();
-                int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
+                Integer estId = s.getEstacionamientoActualId();
+                if (estId == null) {
+                    UI.setError(err, "Debe seleccionar un estacionamiento");
+                    return;
+                }
 
                 Pension p=editar!=null?editar:new Pension(cliId,vehId,cajId,
                     dpInicio.getValue().atStartOfDay(), dpFin.getValue().atTime(23,59), monto, estId);
@@ -969,7 +1011,17 @@ class PreciosImpl extends VBox {
         c.setPrefWidth(110); tabla.getColumns().add(c);
     }
 
-    private void cargar(){ try{datos.setAll(ctrl.obtenerTodosLosPrecios());}catch(Exception e){UI.mostrarError("Error",e.getMessage());} }
+    private void cargar(){
+        try{
+            Session s = Session.getInstance();
+            Integer estId = s.getEstacionamientoActualId();
+            if (estId == null) {
+                datos.clear();
+                return;
+            }
+            datos.setAll(ctrl.obtenerPreciosPorEstacionamiento(estId));
+        } catch(Exception e){UI.mostrarError("Error",e.getMessage());}
+    }
 
     private void formulario(Precio editar){
         Stage ven=new Stage(); ven.initModality(Modality.APPLICATION_MODAL);
@@ -982,7 +1034,9 @@ class PreciosImpl extends VBox {
         TextField fHora=UI.campo("0.00"); TextField fMedia=UI.campo("0.00"); TextField fDia=UI.campo("0.00");
         Session s=Session.getInstance();
         TextField fEst=UI.campo("ID del estacionamiento");
-        fEst.setText(String.valueOf(s.getEstacionamientoId()!=null?s.getEstacionamientoId():1));
+        Integer seleccionEstId = s.getEstacionamientoActualId();
+        fEst.setText(seleccionEstId != null ? String.valueOf(seleccionEstId) : "");
+        fEst.setDisable(true);
 
         if(editar!=null){ if(editar.getTipoVehiculo()!=null)comboTipo.setValue(editar.getTipoVehiculo());
             fHora.setText(String.valueOf(editar.getPrecioHora())); fMedia.setText(String.valueOf(editar.getPrecioMedia())); fDia.setText(String.valueOf(editar.getPrecioDia())); }
@@ -999,7 +1053,8 @@ class PreciosImpl extends VBox {
                 double hora=Double.parseDouble(fHora.getText().trim());
                 double media=Double.parseDouble(fMedia.getText().trim());
                 double dia=Double.parseDouble(fDia.getText().trim());
-                int estId=Integer.parseInt(fEst.getText().trim());
+                Integer estId = seleccionEstId;
+                if (estId == null) { UI.setError(err, "Seleccione un estacionamiento"); return; }
                 Precio p=editar!=null?editar:new Precio(comboTipo.getValue(),hora,media,dia,estId);
                 if(editar!=null){ p.setTipoVehiculo(comboTipo.getValue()); p.setPrecioHora(hora); p.setPrecioMedia(media); p.setPrecioDia(dia); }
 
@@ -1061,7 +1116,17 @@ class PromocionesImpl extends VBox {
     private void col(String n,String p,double w){TableColumn<Promocion,?> c=new TableColumn<>(n); c.setCellValueFactory(new PropertyValueFactory<>(p)); c.setPrefWidth(w); tabla.getColumns().add(c);}
     private void colNum(String n,String p){TableColumn<Promocion,String> c=new TableColumn<>(n);c.setCellValueFactory(d->{ try{double v=((Number)Promocion.class.getMethod("get"+Character.toUpperCase(p.charAt(0))+p.substring(1)).invoke(d.getValue())).doubleValue();return new javafx.beans.property.SimpleStringProperty(v+"%");}catch(Exception e){return new javafx.beans.property.SimpleStringProperty("-");}});c.setPrefWidth(110);tabla.getColumns().add(c);}
 
-    private void cargar(){ try{datos.setAll(ctrl.obtenerTodasLasPromociones());}catch(Exception e){UI.mostrarError("Error",e.getMessage());} }
+    private void cargar(){
+        try{
+            Session s = Session.getInstance();
+            Integer estId = s.getEstacionamientoActualId();
+            if (estId == null) {
+                datos.clear();
+                return;
+            }
+            datos.setAll(ctrl.obtenerPromocionesPorEstacionamiento(estId));
+        }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
+    }
 
     private void formulario(Promocion editar){
         Stage ven=new Stage(); ven.initModality(Modality.APPLICATION_MODAL); ven.setTitle(editar==null?"Nueva promoción":"Editar promoción"); ven.setResizable(false);
@@ -1071,7 +1136,7 @@ class PromocionesImpl extends VBox {
         TextField fNombre=UI.campo("Nombre de la promoción"); TextField fDesc=UI.campo("Descripción"); TextField fDescPct=UI.campo("Ej: 20");
         ComboBox<String> comboTipo=UI.combo(); comboTipo.getItems().addAll("Todos","Auto","Moto","Camioneta"); comboTipo.setValue("Todos");
         CheckBox cbActiva=new CheckBox("Promoción activa"); cbActiva.setSelected(true);
-        TextField fEst=UI.campo("ID estacionamiento"); Session s=Session.getInstance(); fEst.setText(String.valueOf(s.getEstacionamientoId()!=null?s.getEstacionamientoId():1));
+        TextField fEst=UI.campo("ID estacionamiento"); Session s=Session.getInstance(); Integer seleccionEstId=s.getEstacionamientoActualId(); fEst.setText(seleccionEstId != null ? String.valueOf(seleccionEstId) : ""); fEst.setDisable(true);
         javafx.scene.control.DatePicker dpIni=new javafx.scene.control.DatePicker(java.time.LocalDate.now());
         javafx.scene.control.DatePicker dpFin=new javafx.scene.control.DatePicker(java.time.LocalDate.now().plusMonths(1));
         dpIni.setMaxWidth(Double.MAX_VALUE); dpFin.setMaxWidth(Double.MAX_VALUE); dpIni.setStyle(UI.FIELD); dpFin.setStyle(UI.FIELD);
@@ -1088,7 +1153,8 @@ class PromocionesImpl extends VBox {
         guardar.setOnAction(e->{
             try{
                 double pct=Double.parseDouble(fDescPct.getText().trim());
-                int estId=Integer.parseInt(fEst.getText().trim());
+                Integer estId = seleccionEstId;
+                if (estId == null) { UI.setError(err, "Debe seleccionar un estacionamiento"); return; }
                 Promocion p=editar!=null?editar:new Promocion(fNombre.getText().trim(),fDesc.getText().trim(),pct,dpIni.getValue().atStartOfDay(),dpFin.getValue().atTime(23,59),comboTipo.getValue(),estId);
                 if(editar!=null){ p.setNombre(fNombre.getText().trim()); p.setDescripcion(fDesc.getText().trim()); p.setDescuentoPorcentaje(pct); p.setTipoVehiculo(comboTipo.getValue()); p.setActiva(cbActiva.isSelected()); p.setFechaInicio(dpIni.getValue().atStartOfDay()); p.setFechaFin(dpFin.getValue().atTime(23,59)); }
                 String error=ctrl.validarPromocion(p); if(error!=null){UI.setError(err,error);return;}
@@ -1222,7 +1288,8 @@ class ReportesImpl extends ScrollPane {
             for(Estacionamiento e:ests){total+=e.getTotalCajones();disp+=e.getCajonesDisponibles();}
             int ocup=total-disp; int pct=total>0?(ocup*100/total):0;
             double ing=0; Session s=Session.getInstance();
-            if(s.getEstacionamientoId()!=null) ing=regCtrl.obtenerIngresoDelDia(s.getEstacionamientoId(),LocalDateTime.now());
+            Integer estId = s.getEstacionamientoActualId();
+            if(estId!=null) ing=regCtrl.obtenerIngresoDelDia(estId,LocalDateTime.now());
 
             hb.getChildren().addAll(
                 stat("🏢 Estacionamientos",String.valueOf(ests.size()),"registrados",UI.BLUE),
@@ -1247,7 +1314,8 @@ class ReportesImpl extends ScrollPane {
         VBox card=new VBox(12); card.setStyle(UI.CARD); card.setPadding(new Insets(20));
         Label titulo=new Label("Pensiones Activas"); titulo.setFont(Font.font("System",FontWeight.BOLD,13));
         try{
-            Session s=Session.getInstance(); int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
+            Session s=Session.getInstance(); Integer estId=s.getEstacionamientoActualId();
+            if (estId == null) { card.getChildren().addAll(titulo,UI.alertaInfo("Seleccione un estacionamiento para ver pensiones activas.")); return card; }
             List<Pension> pensiones=penCtrl.obtenerPensionesActivas(estId);
             if(pensiones.isEmpty()){card.getChildren().addAll(titulo,UI.alertaInfo("No hay pensiones activas."));return card;}
             double total=pensiones.stream().mapToDouble(Pension::getMonto).sum();
@@ -1269,7 +1337,8 @@ class ReportesImpl extends ScrollPane {
         VBox card=new VBox(12); card.setStyle(UI.CARD); card.setPadding(new Insets(20));
         Label titulo=new Label("🎫 Promociones Vigentes"); titulo.setFont(Font.font("System",FontWeight.BOLD,13));
         try{
-            Session s=Session.getInstance(); int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
+            Session s=Session.getInstance(); Integer estId=s.getEstacionamientoActualId();
+            if (estId == null) { card.getChildren().addAll(titulo,UI.alertaInfo("Seleccione un estacionamiento para ver promociones.")); return card; }
             List<Promocion> promos=promoCtrl.obtenerPromocionesVigentes(estId);
             if(promos.isEmpty()){card.getChildren().addAll(titulo,UI.alertaInfo("No hay promociones vigentes."));return card;}
             card.getChildren().add(titulo);

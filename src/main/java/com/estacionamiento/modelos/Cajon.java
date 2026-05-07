@@ -7,7 +7,7 @@ public class Cajon {
     private int id;
     private int numero;
     private String tipo; // "Normal", "Minusválido", "Preferente"
-    private String estado; // "Disponible", "Ocupado", "Mantenimiento"
+    private String estado; // "libre", "ocupado", "reservado", "pensionado", "fuera de servicio"
     private int estacionamientoId;
     private boolean activo;
 

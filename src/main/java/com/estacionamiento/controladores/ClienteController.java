@@ -32,6 +32,10 @@ public class ClienteController {
         return clienteDAO.obtenerPorDocumento(numeroDocumento);
     }
 
+    public Cliente obtenerClientePorTelefono(String telefono) {
+        return clienteDAO.obtenerPorTelefono(telefono);
+    }
+
     public List<Cliente> obtenerTodosLosClientes() {
         return clienteDAO.obtenerTodos();
     }

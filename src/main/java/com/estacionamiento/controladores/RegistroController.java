@@ -39,8 +39,8 @@ public class RegistroController {
         RegistroEntradaSalida registro = new RegistroEntradaSalida(vehiculoId, cajonId, LocalDateTime.now(), estacionamientoId);
         
         if (registroDAO.crear(registro)) {
-            // Cambiar estado del cajón a Ocupado
-            cajonDAO.cambiarEstado(cajonId, "Ocupado");
+            // Cambiar estado del cajón a ocupado
+            cajonDAO.cambiarEstado(cajonId, "ocupado");
             
             // Actualizar cajones disponibles del estacionamiento
             int disponibles = cajonDAO.contarDisponibles(estacionamientoId);
@@ -92,8 +92,8 @@ public class RegistroController {
 
         // Finalizar el registro
         if (registroDAO.finalizarRegistro(registro.getId(), ahora, monto)) {
-            // Cambiar estado del cajón a Disponible
-            cajonDAO.cambiarEstado(registro.getCajonId(), "Disponible");
+            // Cambiar estado del cajón a libre
+            cajonDAO.cambiarEstado(registro.getCajonId(), "libre");
             
             // Actualizar cajones disponibles del estacionamiento
             int disponibles = cajonDAO.contarDisponibles(estacionamientoId);

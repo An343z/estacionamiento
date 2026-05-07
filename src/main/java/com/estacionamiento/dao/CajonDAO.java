@@ -69,7 +69,7 @@ public class CajonDAO {
 
     public List<Cajon> obtenerDisponibles(int estacionamientoId) {
         List<Cajon> cajones = new ArrayList<>();
-        String sql = "SELECT * FROM cajones WHERE estacionamiento_id = ? AND estado = 'Disponible' AND activo = true";
+        String sql = "SELECT * FROM cajones WHERE estacionamiento_id = ? AND estado = 'libre' AND activo = true";
         
         try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
             pstmt.setInt(1, estacionamientoId);
@@ -85,7 +85,7 @@ public class CajonDAO {
     }
 
     public int contarDisponibles(int estacionamientoId) {
-        String sql = "SELECT COUNT(*) as total FROM cajones WHERE estacionamiento_id = ? AND estado = 'Disponible'";
+        String sql = "SELECT COUNT(*) as total FROM cajones WHERE estacionamiento_id = ? AND estado = 'libre'";
         
         try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
             pstmt.setInt(1, estacionamientoId);

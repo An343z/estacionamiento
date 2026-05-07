@@ -10,6 +10,7 @@ public class Session {
 
     private static Session instance;
     private Usuario usuario;
+    private Integer estacionamientoActualId;
 
     private Session() {}
 
@@ -18,8 +19,8 @@ public class Session {
         return instance;
     }
 
-    public void iniciar(Usuario u) { this.usuario = u; }
-    public void cerrar()           { this.usuario = null; }
+    public void iniciar(Usuario u) { this.usuario = u; this.estacionamientoActualId = u.getEstacionamientoId(); }
+    public void cerrar()           { this.usuario = null; this.estacionamientoActualId = null; }
 
     public Usuario getUsuario()    { return usuario; }
     public boolean isLoggedIn()    { return usuario != null; }
@@ -34,6 +35,15 @@ public class Session {
     /** ID del estacionamiento asignado (null si es admin global) */
     public Integer getEstacionamientoId() {
         return usuario != null ? usuario.getEstacionamientoId() : null;
+    }
+
+    /** ID del estacionamiento actualmente seleccionado */
+    public Integer getEstacionamientoActualId() {
+        return estacionamientoActualId;
+    }
+
+    public void setEstacionamientoActualId(Integer id) {
+        this.estacionamientoActualId = id;
     }
 
     /** Nombre para mostrar */
