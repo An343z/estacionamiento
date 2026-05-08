@@ -52,7 +52,7 @@ public class Sidebar extends VBox {
         setStyle("-fx-background-color:" + UI.SIDEBAR + ";");
         setPrefWidth(230); setMinWidth(230); setMaxWidth(230);
 
-        getChildren().addAll(crearLogo(), crearInfoUsuario(), crearMenu(), spacer(), crearPanelCierre());
+        getChildren().addAll(crearLogo(), crearInfoUsuario(), crearMenuScroll(), spacer(), crearPanelCierre());
     }
 
     private VBox crearLogo() {
@@ -84,7 +84,7 @@ public class Sidebar extends VBox {
         return outer;
     }
 
-    private VBox crearMenu() {
+    private ScrollPane crearMenuScroll() {
         VBox menu = new VBox(0);
         String seccionActual = "";
 
@@ -103,14 +103,21 @@ public class Sidebar extends VBox {
             botones.add(btn);
             menu.getChildren().add(btn);
         }
-        return menu;
+
+        ScrollPane scroll = new ScrollPane(menu);
+        scroll.setFitToWidth(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+        VBox.setVgrow(scroll, Priority.ALWAYS);
+        return scroll;
     }
 
     private Button crearBoton(Modulo m) {
         HBox cont = new HBox(10);
         cont.setAlignment(Pos.CENTER_LEFT);
-        Label ico = new Label(m.icono); ico.setFont(Font.font(16)); ico.setMinWidth(20);
-        Label lbl = new Label(m.etiqueta);
+        Label ico = new Label(m.icono); ico.setFont(Font.font(16)); ico.setMinWidth(20); ico.setStyle("-fx-text-fill:white;");
+        Label lbl = new Label(m.etiqueta); lbl.setStyle("-fx-text-fill:white;-fx-font-size:13px;");
 
         if (m == Modulo.NOTIFICACIONES) {
             badgeNotif = new Label("!");
@@ -174,7 +181,7 @@ public class Sidebar extends VBox {
     }
 
     private String activoStyle()  { return "-fx-background-color:rgba(59,130,246,0.15);-fx-text-fill:white;-fx-border-color:transparent transparent transparent #3b82f6;-fx-border-width:0 0 0 3;-fx-cursor:hand;-fx-alignment:CENTER-LEFT;"; }
-    private String normalStyle()  { return "-fx-background-color:transparent;-fx-text-fill:rgba(255,255,255,0.6);-fx-border-color:transparent;-fx-cursor:hand;-fx-alignment:CENTER-LEFT;"; }
+    private String normalStyle()  { return "-fx-background-color:transparent;-fx-text-fill:white;-fx-border-color:transparent;-fx-cursor:hand;-fx-alignment:CENTER-LEFT;"; }
     private String hoverStyle()   { return "-fx-background-color:rgba(255,255,255,0.06);-fx-text-fill:white;-fx-border-color:transparent;-fx-cursor:hand;-fx-alignment:CENTER-LEFT;"; }
 
     public void setBadgeNotif(int cantidad) {
