@@ -4,6 +4,8 @@ import com.estacionamiento.controladores.*;
 import com.estacionamiento.modelos.*;
 import com.estacionamiento.ui.Session;
 import com.estacionamiento.ui.UI;
+import com.estacionamiento.utilidades.GeneradorPDF;
+import com.estacionamiento.utilidades.GeneradorExcel;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -16,7 +18,10 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.DirectoryChooser;
 
+import java.io.File;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -1300,9 +1305,15 @@ class ReportesImpl extends ScrollPane {
     private final RegistroController regCtrl = new RegistroController();
     private final PensionController penCtrl = new PensionController();
     private final PromocionController promoCtrl = new PromocionController();
+    private final GeneradorPDF generadorPDF;
+    private final GeneradorExcel generadorExcel;
 
     ReportesImpl() {
         System.out.println("[DEBUG] ReportesImpl constructor");
+        String carpetaReportes = System.getProperty("user.home") + File.separator + "Descargas";
+        generadorPDF = new GeneradorPDF(carpetaReportes);
+        generadorExcel = new GeneradorExcel(carpetaReportes);
+        
         setFitToWidth(true); setStyle("-fx-background:"+UI.BG+";-fx-background-color:"+UI.BG+";");
         VBox contenido=new VBox(20); contenido.setPadding(new Insets(24,28,24,28)); contenido.setStyle("-fx-background-color:"+UI.BG+";");
 
@@ -1312,9 +1323,149 @@ class ReportesImpl extends ScrollPane {
         contenido.getChildren().addAll(
             UI.encabezado("Reportes", "Estado y métricas del sistema"),
             aviso,
+            crearPanelGeneradores(),
             crearStatsEstacionamientos(), crearPensionesActivas(), crearPromocionesVigentes()
         );
         setContent(contenido);
+    }
+
+    private VBox crearPanelGeneradores(){
+        VBox card=new VBox(12); card.setStyle(UI.CARD); card.setPadding(new Insets(20));
+        Label titulo=new Label("📄 Generar Reportes"); titulo.setFont(Font.font("System",FontWeight.BOLD,13));
+        Label desc=new Label("Descarga reportes en PDF o Excel"); desc.setStyle("-fx-text-fill:"+UI.MUTED+";-fx-font-size:11px;");
+
+        HBox botones=new HBox(12); botones.setAlignment(Pos.CENTER_LEFT);
+        
+        Button btnPdfOcupacion=new Button("📄 PDF: Ocupación");
+        btnPdfOcupacion.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+        btnPdfOcupacion.setOnAction(e->generarReportePdfOcupacion());
+
+        Button btnPdfIngresos=new Button("📄 PDF: Ingresos");
+        btnPdfIngresos.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+        btnPdfIngresos.setOnAction(e->generarReportePdfIngresos());
+
+        Button btnPdfPensiones=new Button("📄 PDF: Pensiones");
+        btnPdfPensiones.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+        btnPdfPensiones.setOnAction(e->generarReportePdfPensiones());
+
+        Button btnExcelOcupacion=new Button("📊 Excel: Ocupación");
+        btnExcelOcupacion.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+        btnExcelOcupacion.setOnAction(e->generarReporteExcelOcupacion());
+
+        Button btnExcelIngresos=new Button("📊 Excel: Ingresos");
+        btnExcelIngresos.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+        btnExcelIngresos.setOnAction(e->generarReporteExcelIngresos());
+
+        Button btnExcelPensiones=new Button("📊 Excel: Pensiones");
+        btnExcelPensiones.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+        btnExcelPensiones.setOnAction(e->generarReporteExcelPensiones());
+
+        botones.getChildren().addAll(btnPdfOcupacion, btnPdfIngresos, btnPdfPensiones, btnExcelOcupacion, btnExcelIngresos, btnExcelPensiones);
+        
+        card.getChildren().addAll(new VBox(3,titulo,desc), botones);
+        return card;
+    }
+
+    private String seleccionarCarpetaGuardado(String tipoReporte){
+        DirectoryChooser chooser=new DirectoryChooser();
+        chooser.setTitle("Guardar "+tipoReporte+" en...");
+        chooser.setInitialDirectory(new File(System.getProperty("user.home")+File.separator+"Descargas"));
+        File carpeta=chooser.showDialog(null);
+        return carpeta!=null?carpeta.getAbsolutePath():null;
+    }
+
+    private void generarReportePdfOcupacion(){
+        String rutaCarpeta=seleccionarCarpetaGuardado("Reporte PDF");
+        if(rutaCarpeta==null) return;
+        
+        try{
+            GeneradorPDF gen=new GeneradorPDF(rutaCarpeta);
+            Session s=Session.getInstance();
+            int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
+            Estacionamiento est=estCtrl.obtenerEstacionamiento(estId);
+            if(est!=null){
+                boolean ok=gen.generarReporteOcupacion(est.getNombre(), est.getTotalCajones(), 
+                    est.getCajonesDisponibles(), est.getTotalCajones()-est.getCajonesDisponibles(), 0);
+                UI.mostrarInfo("Reporte PDF", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
+            }
+        }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
+    }
+
+    private void generarReportePdfIngresos(){
+        String rutaCarpeta=seleccionarCarpetaGuardado("Reporte PDF");
+        if(rutaCarpeta==null) return;
+        
+        try{
+            GeneradorPDF gen=new GeneradorPDF(rutaCarpeta);
+            Session s=Session.getInstance();
+            int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
+            double ing=regCtrl.obtenerIngresoDelDia(estId, LocalDateTime.now());
+            int registros=regCtrl.obtenerRegistrosPorEstacionamiento(estId).size();
+            boolean ok=gen.generarReporteIngresos(LocalDate.now(), ing, registros);
+            UI.mostrarInfo("Reporte PDF", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
+        }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
+    }
+
+    private void generarReportePdfPensiones(){
+        String rutaCarpeta=seleccionarCarpetaGuardado("Reporte PDF");
+        if(rutaCarpeta==null) return;
+        
+        try{
+            GeneradorPDF gen=new GeneradorPDF(rutaCarpeta);
+            Session s=Session.getInstance();
+            int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
+            List<Pension> pensiones=penCtrl.obtenerPensionesActivas(estId);
+            double total=pensiones.stream().mapToDouble(Pension::getMonto).sum();
+            boolean ok=gen.generarReportePensiones(pensiones.size(), total);
+            UI.mostrarInfo("Reporte PDF", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
+        }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
+    }
+
+    private void generarReporteExcelOcupacion(){
+        String rutaCarpeta=seleccionarCarpetaGuardado("Reporte Excel");
+        if(rutaCarpeta==null) return;
+        
+        try{
+            GeneradorExcel gen=new GeneradorExcel(rutaCarpeta);
+            Session s=Session.getInstance();
+            int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
+            Estacionamiento est=estCtrl.obtenerEstacionamiento(estId);
+            if(est!=null){
+                boolean ok=gen.generarReporteOcupacion(est.getNombre(), est.getTotalCajones(), 
+                    est.getCajonesDisponibles(), est.getTotalCajones()-est.getCajonesDisponibles(), 0);
+                UI.mostrarInfo("Reporte Excel", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
+            }
+        }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
+    }
+
+    private void generarReporteExcelIngresos(){
+        String rutaCarpeta=seleccionarCarpetaGuardado("Reporte Excel");
+        if(rutaCarpeta==null) return;
+        
+        try{
+            GeneradorExcel gen=new GeneradorExcel(rutaCarpeta);
+            Session s=Session.getInstance();
+            int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
+            double ing=regCtrl.obtenerIngresoDelDia(estId, LocalDateTime.now());
+            int registros=regCtrl.obtenerRegistrosPorEstacionamiento(estId).size();
+            boolean ok=gen.generarReporteIngresos(LocalDate.now(), LocalDate.now(), ing, registros);
+            UI.mostrarInfo("Reporte Excel", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
+        }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
+    }
+
+    private void generarReporteExcelPensiones(){
+        String rutaCarpeta=seleccionarCarpetaGuardado("Reporte Excel");
+        if(rutaCarpeta==null) return;
+        
+        try{
+            GeneradorExcel gen=new GeneradorExcel(rutaCarpeta);
+            Session s=Session.getInstance();
+            int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
+            List<Pension> pensiones=penCtrl.obtenerPensionesActivas(estId);
+            double total=pensiones.stream().mapToDouble(Pension::getMonto).sum();
+            boolean ok=gen.generarReportePensiones(pensiones.size(), 0, 0, total);
+            UI.mostrarInfo("Reporte Excel", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
+        }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
     }
 
     private HBox crearStatsEstacionamientos(){

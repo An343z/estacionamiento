@@ -1,8 +1,12 @@
 package com.estacionamiento.utilidades;
 
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.ss.usermodel.*;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +22,65 @@ public class GeneradorExcel {
     }
 
     /**
+     * Genera reporte de datos con encabezados y filas
+     */
+    public boolean generarReporteConDatos(String nombreReporte, List<String> encabezados, List<List<String>> datos) {
+        try {
+            String nombre = nombreReporte + "_" + LocalDate.now() + ".xlsx";
+            String rutaCompleta = rutaSalida + File.separator + nombre;
+
+            File archivo = new File(rutaCompleta);
+            archivo.getParentFile().mkdirs();
+
+            XSSFWorkbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Reporte");
+
+            // Crear encabezados
+            Row headerRow = sheet.createRow(0);
+            CellStyle headerStyle = workbook.createCellStyle();
+            headerStyle.setFillForegroundColor(IndexedColors.BLUE.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            Font headerFont = workbook.createFont();
+            headerFont.setColor(IndexedColors.WHITE.getIndex());
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+
+            for (int i = 0; i < encabezados.size(); i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(encabezados.get(i));
+                cell.setCellStyle(headerStyle);
+            }
+
+            // Agregar datos
+            int rowNum = 1;
+            for (List<String> fila : datos) {
+                Row row = sheet.createRow(rowNum++);
+                for (int i = 0; i < fila.size(); i++) {
+                    row.createCell(i).setCellValue(fila.get(i));
+                }
+            }
+
+            // Ajustar ancho de columnas
+            for (int i = 0; i < encabezados.size(); i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            // Guardar archivo
+            try (FileOutputStream fos = new FileOutputStream(rutaCompleta)) {
+                workbook.write(fos);
+            }
+            workbook.close();
+
+            System.out.println("Excel generado: " + rutaCompleta);
+            return true;
+        } catch (Exception ex) {
+            System.err.println("Error generando Excel: " + ex.getMessage());
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
      * Genera reporte de ocupación en Excel
      */
     public boolean generarReporteOcupacion(String estacionamiento, int totalCajones,
@@ -26,11 +89,35 @@ public class GeneradorExcel {
             String nombre = "Reporte_Ocupacion_" + LocalDate.now() + ".xlsx";
             String rutaCompleta = rutaSalida + File.separator + nombre;
 
-            // Aquí se agregaría la lógica con Apache POI
-            // Por ahora creamos un archivo vacío como placeholder
             File archivo = new File(rutaCompleta);
             archivo.getParentFile().mkdirs();
-            archivo.createNewFile();
+
+            XSSFWorkbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Ocupación");
+
+            // Encabezados
+            Row headerRow = sheet.createRow(0);
+            String[] headers = {"Estacionamiento", "Total Cajones", "Disponibles", "Ocupados", "Mantenimiento"};
+            for (int i = 0; i < headers.length; i++) {
+                headerRow.createCell(i).setCellValue(headers[i]);
+            }
+
+            // Datos
+            Row dataRow = sheet.createRow(1);
+            dataRow.createCell(0).setCellValue(estacionamiento);
+            dataRow.createCell(1).setCellValue(totalCajones);
+            dataRow.createCell(2).setCellValue(disponibles);
+            dataRow.createCell(3).setCellValue(ocupados);
+            dataRow.createCell(4).setCellValue(mantenimiento);
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            try (FileOutputStream fos = new FileOutputStream(rutaCompleta)) {
+                workbook.write(fos);
+            }
+            workbook.close();
 
             System.out.println("Excel generado: " + rutaCompleta);
             return true;
@@ -51,7 +138,41 @@ public class GeneradorExcel {
 
             File archivo = new File(rutaCompleta);
             archivo.getParentFile().mkdirs();
-            archivo.createNewFile();
+
+            XSSFWorkbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Ingresos");
+
+            Row headerRow = sheet.createRow(0);
+            String[] headers = {"Concepto", "Valor"};
+            for (int i = 0; i < headers.length; i++) {
+                headerRow.createCell(i).setCellValue(headers[i]);
+            }
+
+            int rowNum = 1;
+            Row row1 = sheet.createRow(rowNum++);
+            row1.createCell(0).setCellValue("Período Inicio");
+            row1.createCell(1).setCellValue(fechaInicio.toString());
+
+            Row row2 = sheet.createRow(rowNum++);
+            row2.createCell(0).setCellValue("Período Fin");
+            row2.createCell(1).setCellValue(fechaFin.toString());
+
+            Row row3 = sheet.createRow(rowNum++);
+            row3.createCell(0).setCellValue("Total Registros");
+            row3.createCell(1).setCellValue(totalRegistros);
+
+            Row row4 = sheet.createRow(rowNum++);
+            row4.createCell(0).setCellValue("Total Ingresos");
+            row4.createCell(1).setCellValue(totalIngresos);
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            try (FileOutputStream fos = new FileOutputStream(rutaCompleta)) {
+                workbook.write(fos);
+            }
+            workbook.close();
 
             System.out.println("Excel generado: " + rutaCompleta);
             return true;
@@ -72,7 +193,41 @@ public class GeneradorExcel {
 
             File archivo = new File(rutaCompleta);
             archivo.getParentFile().mkdirs();
-            archivo.createNewFile();
+
+            XSSFWorkbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Pensiones");
+
+            Row headerRow = sheet.createRow(0);
+            String[] headers = {"Estado", "Cantidad"};
+            for (int i = 0; i < headers.length; i++) {
+                headerRow.createCell(i).setCellValue(headers[i]);
+            }
+
+            int rowNum = 1;
+            Row row1 = sheet.createRow(rowNum++);
+            row1.createCell(0).setCellValue("Activas");
+            row1.createCell(1).setCellValue(activas);
+
+            Row row2 = sheet.createRow(rowNum++);
+            row2.createCell(0).setCellValue("Vencidas");
+            row2.createCell(1).setCellValue(vencidas);
+
+            Row row3 = sheet.createRow(rowNum++);
+            row3.createCell(0).setCellValue("Canceladas");
+            row3.createCell(1).setCellValue(canceladas);
+
+            Row row4 = sheet.createRow(rowNum++);
+            row4.createCell(0).setCellValue("Ingreso Mensual Estimado");
+            row4.createCell(1).setCellValue(ingresoMensual);
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            try (FileOutputStream fos = new FileOutputStream(rutaCompleta)) {
+                workbook.write(fos);
+            }
+            workbook.close();
 
             System.out.println("Excel generado: " + rutaCompleta);
             return true;
@@ -92,7 +247,25 @@ public class GeneradorExcel {
 
             File archivo = new File(rutaCompleta);
             archivo.getParentFile().mkdirs();
-            archivo.createNewFile();
+
+            XSSFWorkbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Clientes");
+
+            Row row1 = sheet.createRow(0);
+            row1.createCell(0).setCellValue("Total Clientes");
+            row1.createCell(1).setCellValue(totalClientes);
+
+            Row row2 = sheet.createRow(1);
+            row2.createCell(0).setCellValue("Total Vehículos");
+            row2.createCell(1).setCellValue(totalVehiculos);
+
+            sheet.autoSizeColumn(0);
+            sheet.autoSizeColumn(1);
+
+            try (FileOutputStream fos = new FileOutputStream(rutaCompleta)) {
+                workbook.write(fos);
+            }
+            workbook.close();
 
             System.out.println("Excel generado: " + rutaCompleta);
             return true;
@@ -112,7 +285,14 @@ public class GeneradorExcel {
 
             File archivo = new File(rutaCompleta);
             archivo.getParentFile().mkdirs();
-            archivo.createNewFile();
+
+            XSSFWorkbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Consolidado");
+
+            try (FileOutputStream fos = new FileOutputStream(rutaCompleta)) {
+                workbook.write(fos);
+            }
+            workbook.close();
 
             System.out.println("Excel generado: " + rutaCompleta);
             return true;
