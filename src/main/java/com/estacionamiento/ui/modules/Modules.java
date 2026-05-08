@@ -158,40 +158,44 @@ class DashboardImpl extends ScrollPane {
     }
 
     private VBox crearSeccionReportes() {
-        VBox card = new VBox(12);
-        card.setStyle(UI.CARD);
-        card.setPadding(new Insets(20));
+    VBox card = new VBox(12);
+    card.setStyle(UI.CARD);
+    card.setPadding(new Insets(20));
 
-        Label titulo = new Label("Reportes de Base de Datos");
-        titulo.setFont(Font.font("System", FontWeight.BOLD, 13));
+    Label titulo = new Label("Reportes de Base de Datos");
+    titulo.setFont(Font.font("System", FontWeight.BOLD, 13));
 
-        HBox botones = new HBox(12);
-        botones.setAlignment(Pos.CENTER_LEFT);
+    HBox botones = new HBox(12);
+    botones.setAlignment(Pos.CENTER_LEFT);
 
-        Button btnPDF = UI.btnPrimario("📄 Generar PDF");
-        btnPDF.setOnAction(e -> {
-            boolean exito = pdfGen.generarReporteCompletoBD();
-            if (exito) {
-                UI.mostrarInfo("Éxito", "PDF generado correctamente");
-            } else {
-                UI.mostrarError("Error", "No se pudo generar el PDF");
-            }
-        });
+    Button btnPDF = UI.btnPrimario("📄 Generar PDF");
+    Button btnExcel = UI.btnPrimario("📊 Generar Excel");
+    
+    // CORRECCIÓN: Resetear el maxWidth para que los botones se muestren correctamente en HBox
+    btnPDF.setMaxWidth(Region.USE_PREF_SIZE);
+    btnExcel.setMaxWidth(Region.USE_PREF_SIZE);
+    
+    btnPDF.setOnAction(e -> {
+        boolean exito = pdfGen.generarReporteCompletoBD();
+        if (exito) {
+            UI.mostrarInfo("Éxito", "PDF generado correctamente");
+        } else {
+            UI.mostrarError("Error", "No se pudo generar el PDF");
+        }
+    });
 
-        Button btnExcel = UI.btnPrimario("📊 Generar Excel");
-        btnExcel.setOnAction(e -> {
-            boolean exito = excelGen.generarReporteCompletoBD();
-            if (exito) {
-                UI.mostrarInfo("Éxito", "Excel generado correctamente");
-            } else {
-                UI.mostrarError("Error", "No se pudo generar el Excel");
-            }
-        });
+    btnExcel.setOnAction(e -> {
+        boolean exito = excelGen.generarReporteCompletoBD();
+        if (exito) {
+            UI.mostrarInfo("Éxito", "Excel generado correctamente");
+        } else {
+            UI.mostrarError("Error", "No se pudo generar el Excel");
+        }
+    });
 
-        botones.getChildren().addAll(btnPDF, btnExcel);
-        card.getChildren().addAll(titulo, botones);
-        return card;
-    }
+    botones.getChildren().addAll(btnPDF, btnExcel);
+    card.getChildren().addAll(titulo, botones);
+    return card;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1449,4 +1453,6 @@ class ConfiguracionImpl extends ScrollPane {
         }
         card.getChildren().addAll(titulo,grid); return card;
     }
+}
+
 }
