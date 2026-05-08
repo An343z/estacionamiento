@@ -1,312 +1,454 @@
 package com.estacionamiento.utilidades;
 
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.sql.*;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
 
-/**
- * Utilidad para generar reportes en Excel
- * Requiere: Apache POI 5.2.3
- */
 public class GeneradorExcel {
-    private String rutaSalida;
 
-    public GeneradorExcel(String rutaSalida) {
+    private String rutaSalida;
+    private Connection connection;
+
+    public GeneradorExcel(
+            String rutaSalida,
+            Connection connection
+    ) {
+
         this.rutaSalida = rutaSalida;
+        this.connection = connection;
     }
 
-    /**
-     * Genera reporte de datos con encabezados y filas
-     */
-    public boolean generarReporteConDatos(String nombreReporte, List<String> encabezados, List<List<String>> datos) {
-        try {
-            String nombre = nombreReporte + "_" + LocalDate.now() + ".xlsx";
-            String rutaCompleta = rutaSalida + File.separator + nombre;
+    public boolean generarBaseCompletaExcel() {
 
-            File archivo = new File(rutaCompleta);
+        try {
+
+            String nombre =
+                    "Base_Completa_"
+                    + LocalDate.now()
+                    + ".xlsx";
+
+            String rutaCompleta =
+                    rutaSalida
+                    + File.separator
+                    + nombre;
+
+            File archivo =
+                    new File(rutaCompleta);
+
             archivo.getParentFile().mkdirs();
 
-            XSSFWorkbook workbook = new XSSFWorkbook();
-            Sheet sheet = workbook.createSheet("Reporte");
+            XSSFWorkbook workbook =
+                    new XSSFWorkbook();
 
-            // Crear encabezados
-            Row headerRow = sheet.createRow(0);
-            CellStyle headerStyle = workbook.createCellStyle();
-            headerStyle.setFillForegroundColor(IndexedColors.BLUE.getIndex());
-            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-            Font headerFont = workbook.createFont();
-            headerFont.setColor(IndexedColors.WHITE.getIndex());
-            headerFont.setBold(true);
-            headerStyle.setFont(headerFont);
+            Statement tablasStmt =
+                    connection.createStatement();
 
-            for (int i = 0; i < encabezados.size(); i++) {
-                Cell cell = headerRow.createCell(i);
-                cell.setCellValue(encabezados.get(i));
-                cell.setCellStyle(headerStyle);
-            }
+            ResultSet tablas =
+                    tablasStmt.executeQuery(
+                            "SHOW TABLES"
+                    );
 
-            // Agregar datos
-            int rowNum = 1;
-            for (List<String> fila : datos) {
-                Row row = sheet.createRow(rowNum++);
-                for (int i = 0; i < fila.size(); i++) {
-                    row.createCell(i).setCellValue(fila.get(i));
+            System.out.println("TABLAS ENCONTRADAS:");
+
+            while(tablas.next()) {
+
+                String tabla =
+                        tablas.getString(1);
+
+                System.out.println(tabla);
+
+                try {
+
+                    System.out.println(
+                            "Exportando tabla: "
+                            + tabla
+                    );
+
+                    Sheet sheet =
+                            workbook.createSheet(tabla);
+
+                    Statement st =
+                            connection.createStatement();
+
+                    ResultSet rs =
+                            st.executeQuery(
+                                    "SELECT * FROM `"
+                                    + tabla
+                                    + "`"
+                            );
+
+                    ResultSetMetaData rsmd =
+                            rs.getMetaData();
+
+                    int columnas =
+                            rsmd.getColumnCount();
+
+                    CellStyle headerStyle =
+                            workbook.createCellStyle();
+
+                    Font font =
+                            workbook.createFont();
+
+                    font.setBold(true);
+
+                    headerStyle.setFont(font);
+
+                    Row header =
+                            sheet.createRow(0);
+
+                    for(int i = 1;
+                        i <= columnas;
+                        i++) {
+
+                        Cell cell =
+                                header.createCell(i - 1);
+
+                        cell.setCellValue(
+                                rsmd.getColumnName(i)
+                        );
+
+                        cell.setCellStyle(
+                                headerStyle
+                        );
+                    }
+
+                    int fila = 1;
+
+                    while(rs.next()) {
+
+                        Row row =
+                                sheet.createRow(fila++);
+
+                        for(int i = 1;
+                            i <= columnas;
+                            i++) {
+
+                            Object valor =
+                                    rs.getObject(i);
+
+                            row.createCell(i - 1)
+                                    .setCellValue(
+                                            valor != null
+                                            ? valor.toString()
+                                            : ""
+                                    );
+                        }
+                    }
+
+                    for(int i = 0;
+                        i < columnas;
+                        i++) {
+
+                        sheet.autoSizeColumn(i);
+                    }
+
+                    rs.close();
+                    st.close();
+
+                } catch(Exception ex) {
+
+                    System.out.println(
+                            "Error exportando tabla: "
+                            + tabla
+                    );
+
+                    ex.printStackTrace();
                 }
             }
 
-            // Ajustar ancho de columnas
-            for (int i = 0; i < encabezados.size(); i++) {
-                sheet.autoSizeColumn(i);
-            }
+            tablas.close();
+            tablasStmt.close();
 
-            // Guardar archivo
-            try (FileOutputStream fos = new FileOutputStream(rutaCompleta)) {
+            try(FileOutputStream fos =
+                        new FileOutputStream(
+                                rutaCompleta
+                        )) {
+
                 workbook.write(fos);
             }
+
             workbook.close();
 
-            System.out.println("Excel generado: " + rutaCompleta);
+            System.out.println(
+                    "Excel completo generado"
+            );
+
             return true;
-        } catch (Exception ex) {
-            System.err.println("Error generando Excel: " + ex.getMessage());
+
+        } catch(Exception ex) {
+
             ex.printStackTrace();
             return false;
         }
     }
 
-    /**
-     * Genera reporte de ocupación en Excel
-     */
-    public boolean generarReporteOcupacion(String estacionamiento, int totalCajones,
-                                           int disponibles, int ocupados, int mantenimiento) {
-        try {
-            String nombre = "Reporte_Ocupacion_" + LocalDate.now() + ".xlsx";
-            String rutaCompleta = rutaSalida + File.separator + nombre;
+    public boolean generarBaseDiaExcel(
+            LocalDate fecha
+    ) {
 
-            File archivo = new File(rutaCompleta);
+        return generarBaseFiltradaExcel(
+                "DIA_" + fecha,
+                "DATE(%s)='" + fecha + "'"
+        );
+    }
+
+    public boolean generarBaseMesExcel(
+            int anio,
+            int mes
+    ) {
+
+        return generarBaseFiltradaExcel(
+                "MES_" + anio + "_" + mes,
+                "MONTH(%s)=" + mes
+                + " AND YEAR(%s)=" + anio
+        );
+    }
+
+    public boolean generarBaseAnioExcel(
+            int anio
+    ) {
+
+        return generarBaseFiltradaExcel(
+                "ANIO_" + anio,
+                "YEAR(%s)=" + anio
+        );
+    }
+
+    private boolean generarBaseFiltradaExcel(
+            String sufijo,
+            String filtro
+    ) {
+
+        try {
+
+            String nombre =
+                    "Base_"
+                    + sufijo
+                    + ".xlsx";
+
+            String rutaCompleta =
+                    rutaSalida
+                    + File.separator
+                    + nombre;
+
+            File archivo =
+                    new File(rutaCompleta);
+
             archivo.getParentFile().mkdirs();
 
-            XSSFWorkbook workbook = new XSSFWorkbook();
-            Sheet sheet = workbook.createSheet("Ocupación");
+            XSSFWorkbook workbook =
+                    new XSSFWorkbook();
 
-            // Encabezados
-            Row headerRow = sheet.createRow(0);
-            String[] headers = {"Estacionamiento", "Total Cajones", "Disponibles", "Ocupados", "Mantenimiento"};
-            for (int i = 0; i < headers.length; i++) {
-                headerRow.createCell(i).setCellValue(headers[i]);
+            Statement tablasStmt =
+                    connection.createStatement();
+
+            ResultSet tablas =
+                    tablasStmt.executeQuery(
+                            "SHOW TABLES"
+                    );
+
+            while(tablas.next()) {
+
+                String tabla =
+                        tablas.getString(1);
+
+                try {
+
+                    System.out.println(
+                            "Exportando tabla: "
+                            + tabla
+                    );
+
+                    Sheet sheet =
+                            workbook.createSheet(tabla);
+
+                    Statement st =
+                            connection.createStatement();
+
+                    String columnaFecha =
+                            obtenerColumnaFecha(
+                                    tabla
+                            );
+
+                    ResultSet rs;
+
+                    if(columnaFecha != null
+                            && filtro != null) {
+
+                        String query =
+                                "SELECT * FROM `"
+                                + tabla
+                                + "` WHERE "
+                                + String.format(
+                                        filtro,
+                                        columnaFecha,
+                                        columnaFecha
+                                );
+
+                        rs = st.executeQuery(query);
+
+                    } else {
+
+                        rs = st.executeQuery(
+                                "SELECT * FROM `"
+                                + tabla
+                                + "`"
+                        );
+                    }
+
+                    ResultSetMetaData rsmd =
+                            rs.getMetaData();
+
+                    int columnas =
+                            rsmd.getColumnCount();
+
+                    CellStyle headerStyle =
+                            workbook.createCellStyle();
+
+                    Font font =
+                            workbook.createFont();
+
+                    font.setBold(true);
+
+                    headerStyle.setFont(font);
+
+                    Row header =
+                            sheet.createRow(0);
+
+                    for(int i = 1;
+                        i <= columnas;
+                        i++) {
+
+                        Cell cell =
+                                header.createCell(i - 1);
+
+                        cell.setCellValue(
+                                rsmd.getColumnName(i)
+                        );
+
+                        cell.setCellStyle(
+                                headerStyle
+                        );
+                    }
+
+                    int fila = 1;
+
+                    while(rs.next()) {
+
+                        Row row =
+                                sheet.createRow(fila++);
+
+                        for(int i = 1;
+                            i <= columnas;
+                            i++) {
+
+                            Object valor =
+                                    rs.getObject(i);
+
+                            row.createCell(i - 1)
+                                    .setCellValue(
+                                            valor != null
+                                            ? valor.toString()
+                                            : ""
+                                    );
+                        }
+                    }
+
+                    for(int i = 0;
+                        i < columnas;
+                        i++) {
+
+                        sheet.autoSizeColumn(i);
+                    }
+
+                    rs.close();
+                    st.close();
+
+                } catch(Exception ex) {
+
+                    System.out.println(
+                            "Error exportando tabla: "
+                            + tabla
+                    );
+
+                    ex.printStackTrace();
+                }
             }
 
-            // Datos
-            Row dataRow = sheet.createRow(1);
-            dataRow.createCell(0).setCellValue(estacionamiento);
-            dataRow.createCell(1).setCellValue(totalCajones);
-            dataRow.createCell(2).setCellValue(disponibles);
-            dataRow.createCell(3).setCellValue(ocupados);
-            dataRow.createCell(4).setCellValue(mantenimiento);
+            tablas.close();
+            tablasStmt.close();
 
-            for (int i = 0; i < headers.length; i++) {
-                sheet.autoSizeColumn(i);
-            }
+            try(FileOutputStream fos =
+                        new FileOutputStream(
+                                rutaCompleta
+                        )) {
 
-            try (FileOutputStream fos = new FileOutputStream(rutaCompleta)) {
                 workbook.write(fos);
             }
+
             workbook.close();
 
-            System.out.println("Excel generado: " + rutaCompleta);
+            System.out.println(
+                    "Excel filtrado generado"
+            );
+
             return true;
-        } catch (Exception ex) {
-            System.err.println("Error generando Excel: " + ex.getMessage());
+
+        } catch(Exception ex) {
+
+            ex.printStackTrace();
             return false;
         }
     }
 
-    /**
-     * Genera reporte de ingresos en Excel
-     */
-    public boolean generarReporteIngresos(LocalDate fechaInicio, LocalDate fechaFin,
-                                          double totalIngresos, int totalRegistros) {
-        try {
-            String nombre = "Reporte_Ingresos_" + fechaInicio + "_a_" + fechaFin + ".xlsx";
-            String rutaCompleta = rutaSalida + File.separator + nombre;
+    private String obtenerColumnaFecha(
+            String tabla
+    ) {
 
-            File archivo = new File(rutaCompleta);
-            archivo.getParentFile().mkdirs();
+        switch(tabla) {
 
-            XSSFWorkbook workbook = new XSSFWorkbook();
-            Sheet sheet = workbook.createSheet("Ingresos");
+            case "registros_entrada_salida":
+                return "fecha_entrada";
 
-            Row headerRow = sheet.createRow(0);
-            String[] headers = {"Concepto", "Valor"};
-            for (int i = 0; i < headers.length; i++) {
-                headerRow.createCell(i).setCellValue(headers[i]);
-            }
+            case "historial_eventos":
+                return "fecha";
 
-            int rowNum = 1;
-            Row row1 = sheet.createRow(rowNum++);
-            row1.createCell(0).setCellValue("Período Inicio");
-            row1.createCell(1).setCellValue(fechaInicio.toString());
+            case "pensiones":
+                return "fecha_inicio";
 
-            Row row2 = sheet.createRow(rowNum++);
-            row2.createCell(0).setCellValue("Período Fin");
-            row2.createCell(1).setCellValue(fechaFin.toString());
+            case "facturas_restaurante":
+                return "fecha";
 
-            Row row3 = sheet.createRow(rowNum++);
-            row3.createCell(0).setCellValue("Total Registros");
-            row3.createCell(1).setCellValue(totalRegistros);
+            case "notificaciones":
+                return "fecha";
 
-            Row row4 = sheet.createRow(rowNum++);
-            row4.createCell(0).setCellValue("Total Ingresos");
-            row4.createCell(1).setCellValue(totalIngresos);
+            case "clientes":
+                return "fecha_registro";
 
-            for (int i = 0; i < headers.length; i++) {
-                sheet.autoSizeColumn(i);
-            }
+            case "vehiculos":
+                return "fecha_registro";
 
-            try (FileOutputStream fos = new FileOutputStream(rutaCompleta)) {
-                workbook.write(fos);
-            }
-            workbook.close();
+            case "usuarios":
+                return "fecha_creacion";
 
-            System.out.println("Excel generado: " + rutaCompleta);
-            return true;
-        } catch (Exception ex) {
-            System.err.println("Error generando Excel: " + ex.getMessage());
-            return false;
+            case "clientes_restaurante":
+                return "fecha_registro";
+
+            case "registros_uso_restaurante":
+                return "fecha";
+
+            case "promociones":
+                return "fecha_inicio";
+
+            case "convenios_restaurante":
+                return "fecha_inicio";
+
+            default:
+                return null;
         }
-    }
-
-    /**
-     * Genera reporte de pensiones en Excel
-     */
-    public boolean generarReportePensiones(int activas, int vencidas, int canceladas,
-                                          double ingresoMensual) {
-        try {
-            String nombre = "Reporte_Pensiones_" + LocalDate.now() + ".xlsx";
-            String rutaCompleta = rutaSalida + File.separator + nombre;
-
-            File archivo = new File(rutaCompleta);
-            archivo.getParentFile().mkdirs();
-
-            XSSFWorkbook workbook = new XSSFWorkbook();
-            Sheet sheet = workbook.createSheet("Pensiones");
-
-            Row headerRow = sheet.createRow(0);
-            String[] headers = {"Estado", "Cantidad"};
-            for (int i = 0; i < headers.length; i++) {
-                headerRow.createCell(i).setCellValue(headers[i]);
-            }
-
-            int rowNum = 1;
-            Row row1 = sheet.createRow(rowNum++);
-            row1.createCell(0).setCellValue("Activas");
-            row1.createCell(1).setCellValue(activas);
-
-            Row row2 = sheet.createRow(rowNum++);
-            row2.createCell(0).setCellValue("Vencidas");
-            row2.createCell(1).setCellValue(vencidas);
-
-            Row row3 = sheet.createRow(rowNum++);
-            row3.createCell(0).setCellValue("Canceladas");
-            row3.createCell(1).setCellValue(canceladas);
-
-            Row row4 = sheet.createRow(rowNum++);
-            row4.createCell(0).setCellValue("Ingreso Mensual Estimado");
-            row4.createCell(1).setCellValue(ingresoMensual);
-
-            for (int i = 0; i < headers.length; i++) {
-                sheet.autoSizeColumn(i);
-            }
-
-            try (FileOutputStream fos = new FileOutputStream(rutaCompleta)) {
-                workbook.write(fos);
-            }
-            workbook.close();
-
-            System.out.println("Excel generado: " + rutaCompleta);
-            return true;
-        } catch (Exception ex) {
-            System.err.println("Error generando Excel: " + ex.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Genera reporte de clientes y vehículos
-     */
-    public boolean generarReporteClientes(int totalClientes, int totalVehiculos) {
-        try {
-            String nombre = "Reporte_Clientes_" + LocalDate.now() + ".xlsx";
-            String rutaCompleta = rutaSalida + File.separator + nombre;
-
-            File archivo = new File(rutaCompleta);
-            archivo.getParentFile().mkdirs();
-
-            XSSFWorkbook workbook = new XSSFWorkbook();
-            Sheet sheet = workbook.createSheet("Clientes");
-
-            Row row1 = sheet.createRow(0);
-            row1.createCell(0).setCellValue("Total Clientes");
-            row1.createCell(1).setCellValue(totalClientes);
-
-            Row row2 = sheet.createRow(1);
-            row2.createCell(0).setCellValue("Total Vehículos");
-            row2.createCell(1).setCellValue(totalVehiculos);
-
-            sheet.autoSizeColumn(0);
-            sheet.autoSizeColumn(1);
-
-            try (FileOutputStream fos = new FileOutputStream(rutaCompleta)) {
-                workbook.write(fos);
-            }
-            workbook.close();
-
-            System.out.println("Excel generado: " + rutaCompleta);
-            return true;
-        } catch (Exception ex) {
-            System.err.println("Error generando Excel: " + ex.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Genera reporte consolidado de cadena
-     */
-    public boolean generarReporteConsolidado(LocalDate fecha, List<Map<String, Object>> datos) {
-        try {
-            String nombre = "Reporte_Consolidado_" + fecha + ".xlsx";
-            String rutaCompleta = rutaSalida + File.separator + nombre;
-
-            File archivo = new File(rutaCompleta);
-            archivo.getParentFile().mkdirs();
-
-            XSSFWorkbook workbook = new XSSFWorkbook();
-            Sheet sheet = workbook.createSheet("Consolidado");
-
-            try (FileOutputStream fos = new FileOutputStream(rutaCompleta)) {
-                workbook.write(fos);
-            }
-            workbook.close();
-
-            System.out.println("Excel generado: " + rutaCompleta);
-            return true;
-        } catch (Exception ex) {
-            System.err.println("Error generando Excel: " + ex.getMessage());
-            return false;
-        }
-    }
-
-    public String getRutaSalida() {
-        return rutaSalida;
-    }
-
-    public void setRutaSalida(String rutaSalida) {
-        this.rutaSalida = rutaSalida;
     }
 }

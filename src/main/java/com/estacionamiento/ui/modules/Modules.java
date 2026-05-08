@@ -19,6 +19,7 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.DirectoryChooser;
+import com.estacionamiento.dao.ConexionDB;
 
 import java.io.File;
 import java.time.LocalDate;
@@ -1311,8 +1312,15 @@ class ReportesImpl extends ScrollPane {
     ReportesImpl() {
         System.out.println("[DEBUG] ReportesImpl constructor");
         String carpetaReportes = System.getProperty("user.home") + File.separator + "Descargas";
-        generadorPDF = new GeneradorPDF(carpetaReportes);
-        generadorExcel = new GeneradorExcel(carpetaReportes);
+        generadorPDF = new GeneradorPDF(
+        carpetaReportes,
+        ConexionDB.getInstancia().getConexion()
+);
+
+generadorExcel = new GeneradorExcel(
+        carpetaReportes,
+        ConexionDB.getInstancia().getConexion()
+);
         
         setFitToWidth(true); setStyle("-fx-background:"+UI.BG+";-fx-background-color:"+UI.BG+";");
         VBox contenido=new VBox(20); contenido.setPadding(new Insets(24,28,24,28)); contenido.setStyle("-fx-background-color:"+UI.BG+";");
@@ -1329,144 +1337,374 @@ class ReportesImpl extends ScrollPane {
         setContent(contenido);
     }
 
-    private VBox crearPanelGeneradores(){
-        VBox card=new VBox(12); card.setStyle(UI.CARD); card.setPadding(new Insets(20));
-        Label titulo=new Label("📄 Generar Reportes"); titulo.setFont(Font.font("System",FontWeight.BOLD,13));
-        Label desc=new Label("Descarga reportes en PDF o Excel"); desc.setStyle("-fx-text-fill:"+UI.MUTED+";-fx-font-size:11px;");
+  private VBox crearPanelGeneradores(){
 
-        HBox botones=new HBox(12); botones.setAlignment(Pos.CENTER_LEFT);
-        
-        Button btnPdfOcupacion=new Button("📄 PDF: Ocupación");
-        btnPdfOcupacion.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
-        btnPdfOcupacion.setOnAction(e->generarReportePdfOcupacion());
+    VBox card = new VBox(12);
+    card.setStyle(UI.CARD);
+    card.setPadding(new Insets(20));
 
-        Button btnPdfIngresos=new Button("📄 PDF: Ingresos");
-        btnPdfIngresos.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
-        btnPdfIngresos.setOnAction(e->generarReportePdfIngresos());
+    Label titulo = new Label("📂 Exportar Base de Datos");
+    titulo.setFont(Font.font("System", FontWeight.BOLD, 13));
 
-        Button btnPdfPensiones=new Button("📄 PDF: Pensiones");
-        btnPdfPensiones.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
-        btnPdfPensiones.setOnAction(e->generarReportePdfPensiones());
+    Label desc = new Label("Descarga la base de datos en PDF o Excel");
+    desc.setStyle("-fx-text-fill:"+UI.MUTED+";-fx-font-size:11px;");
 
-        Button btnExcelOcupacion=new Button("📊 Excel: Ocupación");
-        btnExcelOcupacion.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
-        btnExcelOcupacion.setOnAction(e->generarReporteExcelOcupacion());
+    HBox botones = new HBox(12);
+    botones.setAlignment(Pos.CENTER_LEFT);
 
-        Button btnExcelIngresos=new Button("📊 Excel: Ingresos");
-        btnExcelIngresos.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
-        btnExcelIngresos.setOnAction(e->generarReporteExcelIngresos());
+    // =========================
+    // PDF
+    // =========================
 
-        Button btnExcelPensiones=new Button("📊 Excel: Pensiones");
-        btnExcelPensiones.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
-        btnExcelPensiones.setOnAction(e->generarReporteExcelPensiones());
+    Button btnPdfDia = new Button("📄 PDF Día");
+    btnPdfDia.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    btnPdfDia.setOnAction(e -> generarPdfDia());
 
-        botones.getChildren().addAll(btnPdfOcupacion, btnPdfIngresos, btnPdfPensiones, btnExcelOcupacion, btnExcelIngresos, btnExcelPensiones);
-        
-        card.getChildren().addAll(new VBox(3,titulo,desc), botones);
-        return card;
+    Button btnPdfMes = new Button("📄 PDF Mes");
+    btnPdfMes.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    btnPdfMes.setOnAction(e -> generarPdfMes());
+
+    Button btnPdfAnio = new Button("📄 PDF Año");
+    btnPdfAnio.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    btnPdfAnio.setOnAction(e -> generarPdfAnio());
+
+    // =========================
+    // EXCEL
+    // =========================
+
+    Button btnExcelDia = new Button("📊 Excel Día");
+    btnExcelDia.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    btnExcelDia.setOnAction(e -> generarExcelDia());
+
+    Button btnExcelMes = new Button("📊 Excel Mes");
+    btnExcelMes.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    btnExcelMes.setOnAction(e -> generarExcelMes());
+
+    Button btnExcelAnio = new Button("📊 Excel Año");
+    btnExcelAnio.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    btnExcelAnio.setOnAction(e -> generarExcelAnio());
+
+    Button btnExcelCompleto = new Button("💾 Excel Completo");
+    btnExcelCompleto.setStyle("-fx-background-color:#2563eb;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    btnExcelCompleto.setOnAction(e -> generarExcelCompleto());
+
+    botones.getChildren().addAll(
+            btnPdfDia,
+            btnPdfMes,
+            btnPdfAnio,
+            btnExcelDia,
+            btnExcelMes,
+            btnExcelAnio,
+            btnExcelCompleto
+    );
+
+    card.getChildren().addAll(
+            new VBox(3, titulo, desc),
+            botones
+    );
+
+    return card;
+}
+
+  private String seleccionarCarpetaGuardado(String tipo){
+
+    DirectoryChooser chooser =
+            new DirectoryChooser();
+
+    chooser.setTitle(
+            "Guardar " + tipo + " en..."
+    );
+
+    chooser.setInitialDirectory(
+            new File(
+                    System.getProperty("user.home")
+                    + File.separator
+                    + "Downloads"
+            )
+    );
+
+    File carpeta =
+            chooser.showDialog(null);
+
+    return carpeta != null
+            ? carpeta.getAbsolutePath()
+            : null;
+}
+private void generarPdfDia(){
+
+    String ruta =
+            seleccionarCarpetaGuardado("PDF Día");
+
+    if(ruta == null) return;
+
+    try{
+
+        GeneradorPDF gen =
+                new GeneradorPDF(
+                        ruta,
+                        ConexionDB.getInstancia().getConexion()
+                );
+
+        boolean ok =
+                gen.generarPdfDia(
+                        LocalDate.now()
+                );
+
+        UI.mostrarInfo(
+                "PDF",
+                ok
+                ? "PDF generado correctamente"
+                : "Error al generar PDF"
+        );
+
+    }catch(Exception e){
+
+        UI.mostrarError(
+                "Error",
+                e.getMessage()
+        );
     }
+}
+private void generarPdfMes(){
 
-    private String seleccionarCarpetaGuardado(String tipoReporte){
-        DirectoryChooser chooser=new DirectoryChooser();
-        chooser.setTitle("Guardar "+tipoReporte+" en...");
-        chooser.setInitialDirectory(new File(System.getProperty("user.home")+File.separator+"Descargas"));
-        File carpeta=chooser.showDialog(null);
-        return carpeta!=null?carpeta.getAbsolutePath():null;
-    }
+    String ruta =
+            seleccionarCarpetaGuardado("PDF Mes");
 
-    private void generarReportePdfOcupacion(){
-        String rutaCarpeta=seleccionarCarpetaGuardado("Reporte PDF");
-        if(rutaCarpeta==null) return;
-        
-        try{
-            GeneradorPDF gen=new GeneradorPDF(rutaCarpeta);
-            Session s=Session.getInstance();
-            int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
-            Estacionamiento est=estCtrl.obtenerEstacionamiento(estId);
-            if(est!=null){
-                boolean ok=gen.generarReporteOcupacion(est.getNombre(), est.getTotalCajones(), 
-                    est.getCajonesDisponibles(), est.getTotalCajones()-est.getCajonesDisponibles(), 0);
-                UI.mostrarInfo("Reporte PDF", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
-            }
-        }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
-    }
+    if(ruta == null) return;
 
-    private void generarReportePdfIngresos(){
-        String rutaCarpeta=seleccionarCarpetaGuardado("Reporte PDF");
-        if(rutaCarpeta==null) return;
-        
-        try{
-            GeneradorPDF gen=new GeneradorPDF(rutaCarpeta);
-            Session s=Session.getInstance();
-            int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
-            double ing=regCtrl.obtenerIngresoDelDia(estId, LocalDateTime.now());
-            int registros=regCtrl.obtenerRegistrosPorEstacionamiento(estId).size();
-            boolean ok=gen.generarReporteIngresos(LocalDate.now(), ing, registros);
-            UI.mostrarInfo("Reporte PDF", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
-        }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
-    }
+    try{
 
-    private void generarReportePdfPensiones(){
-        String rutaCarpeta=seleccionarCarpetaGuardado("Reporte PDF");
-        if(rutaCarpeta==null) return;
-        
-        try{
-            GeneradorPDF gen=new GeneradorPDF(rutaCarpeta);
-            Session s=Session.getInstance();
-            int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
-            List<Pension> pensiones=penCtrl.obtenerPensionesActivas(estId);
-            double total=pensiones.stream().mapToDouble(Pension::getMonto).sum();
-            boolean ok=gen.generarReportePensiones(pensiones.size(), total);
-            UI.mostrarInfo("Reporte PDF", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
-        }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
-    }
+        LocalDate hoy =
+                LocalDate.now();
 
-    private void generarReporteExcelOcupacion(){
-        String rutaCarpeta=seleccionarCarpetaGuardado("Reporte Excel");
-        if(rutaCarpeta==null) return;
-        
-        try{
-            GeneradorExcel gen=new GeneradorExcel(rutaCarpeta);
-            Session s=Session.getInstance();
-            int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
-            Estacionamiento est=estCtrl.obtenerEstacionamiento(estId);
-            if(est!=null){
-                boolean ok=gen.generarReporteOcupacion(est.getNombre(), est.getTotalCajones(), 
-                    est.getCajonesDisponibles(), est.getTotalCajones()-est.getCajonesDisponibles(), 0);
-                UI.mostrarInfo("Reporte Excel", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
-            }
-        }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
-    }
+        GeneradorPDF gen =
+                new GeneradorPDF(
+                        ruta,
+                        ConexionDB.getInstancia().getConexion()
+                );
 
-    private void generarReporteExcelIngresos(){
-        String rutaCarpeta=seleccionarCarpetaGuardado("Reporte Excel");
-        if(rutaCarpeta==null) return;
-        
-        try{
-            GeneradorExcel gen=new GeneradorExcel(rutaCarpeta);
-            Session s=Session.getInstance();
-            int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
-            double ing=regCtrl.obtenerIngresoDelDia(estId, LocalDateTime.now());
-            int registros=regCtrl.obtenerRegistrosPorEstacionamiento(estId).size();
-            boolean ok=gen.generarReporteIngresos(LocalDate.now(), LocalDate.now(), ing, registros);
-            UI.mostrarInfo("Reporte Excel", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
-        }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
-    }
+        boolean ok =
+                gen.generarPdfMes(
+                        hoy.getYear(),
+                        hoy.getMonthValue()
+                );
 
-    private void generarReporteExcelPensiones(){
-        String rutaCarpeta=seleccionarCarpetaGuardado("Reporte Excel");
-        if(rutaCarpeta==null) return;
-        
-        try{
-            GeneradorExcel gen=new GeneradorExcel(rutaCarpeta);
-            Session s=Session.getInstance();
-            int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
-            List<Pension> pensiones=penCtrl.obtenerPensionesActivas(estId);
-            double total=pensiones.stream().mapToDouble(Pension::getMonto).sum();
-            boolean ok=gen.generarReportePensiones(pensiones.size(), 0, 0, total);
-            UI.mostrarInfo("Reporte Excel", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
-        }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
+        UI.mostrarInfo(
+                "PDF",
+                ok
+                ? "PDF generado correctamente"
+                : "Error al generar PDF"
+        );
+
+    }catch(Exception e){
+
+        UI.mostrarError(
+                "Error",
+                e.getMessage()
+        );
     }
+}
+
+
+private void generarPdfAnio(){
+
+    String ruta =
+            seleccionarCarpetaGuardado("PDF Año");
+
+    if(ruta == null) return;
+
+    try{
+
+        int anio =
+                LocalDate.now().getYear();
+
+        GeneradorPDF gen =
+                new GeneradorPDF(
+                        ruta,
+                        ConexionDB.getInstancia().getConexion()
+                );
+
+        boolean ok =
+                gen.generarPdfAnio(anio);
+
+        UI.mostrarInfo(
+                "PDF",
+                ok
+                ? "PDF generado correctamente"
+                : "Error al generar PDF"
+        );
+
+    }catch(Exception e){
+
+        UI.mostrarError(
+                "Error",
+                e.getMessage()
+        );
+    }
+}
+
+
+private void generarExcelDia(){
+
+    String ruta =
+            seleccionarCarpetaGuardado(
+                    "Excel Día"
+            );
+
+    if(ruta == null) return;
+
+    try{
+
+        GeneradorExcel gen =
+                new GeneradorExcel(
+                        ruta,
+                        ConexionDB.getInstancia().getConexion()
+                );
+
+        boolean ok =
+                gen.generarBaseDiaExcel(
+                        LocalDate.now()
+                );
+
+        UI.mostrarInfo(
+                "Excel",
+                ok
+                ? "Excel generado correctamente"
+                : "Error al generar Excel"
+        );
+
+    }catch(Exception e){
+
+        UI.mostrarError(
+                "Error",
+                e.getMessage()
+        );
+    }
+}
+
+
+private void generarExcelMes(){
+
+    String ruta =
+            seleccionarCarpetaGuardado(
+                    "Excel Mes"
+            );
+
+    if(ruta == null) return;
+
+    try{
+
+        LocalDate hoy =
+                LocalDate.now();
+
+        GeneradorExcel gen =
+                new GeneradorExcel(
+                        ruta,
+                        ConexionDB.getInstancia().getConexion()
+                );
+
+        boolean ok =
+                gen.generarBaseMesExcel(
+                        hoy.getYear(),
+                        hoy.getMonthValue()
+                );
+
+        UI.mostrarInfo(
+                "Excel",
+                ok
+                ? "Excel generado correctamente"
+                : "Error al generar Excel"
+        );
+
+    }catch(Exception e){
+
+        UI.mostrarError(
+                "Error",
+                e.getMessage()
+        );
+    }
+}
+
+
+private void generarExcelAnio(){
+
+    String ruta =
+            seleccionarCarpetaGuardado(
+                    "Excel Año"
+            );
+
+    if(ruta == null) return;
+
+    try{
+
+        int anio =
+                LocalDate.now().getYear();
+
+        GeneradorExcel gen =
+                new GeneradorExcel(
+                        ruta,
+                        ConexionDB.getInstancia().getConexion()
+                );
+
+        boolean ok =
+                gen.generarBaseAnioExcel(
+                        anio
+                );
+
+        UI.mostrarInfo(
+                "Excel",
+                ok
+                ? "Excel generado correctamente"
+                : "Error al generar Excel"
+        );
+
+    }catch(Exception e){
+
+        UI.mostrarError(
+                "Error",
+                e.getMessage()
+        );
+    }
+}
+
+private void generarExcelCompleto(){
+
+    String ruta =
+            seleccionarCarpetaGuardado(
+                    "Excel Completo"
+            );
+
+    if(ruta == null) return;
+
+    try{
+
+        GeneradorExcel gen =
+                new GeneradorExcel(
+                        ruta,
+                        ConexionDB.getInstancia().getConexion()
+                );
+
+        boolean ok =
+                gen.generarBaseCompletaExcel();
+
+        UI.mostrarInfo(
+                "Excel",
+                ok
+                ? "Base completa exportada"
+                : "Error al exportar"
+        );
+
+    }catch(Exception e){
+
+        UI.mostrarError(
+                "Error",
+                e.getMessage()
+        );
+    }
+}
+
+
+
 
     private HBox crearStatsEstacionamientos(){
         HBox hb=new HBox(14);

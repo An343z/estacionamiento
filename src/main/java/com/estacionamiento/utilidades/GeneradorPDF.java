@@ -1,112 +1,317 @@
 package com.estacionamiento.utilidades;
 
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Paragraph;
+
 import java.io.File;
-import java.io.FileOutputStream;
+import java.sql.*;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
 
-/**
- * Utilidad para generar reportes en PDF
- * Requiere: iText 7.2.5
- */
 public class GeneradorPDF {
+
     private String rutaSalida;
+    private Connection connection;
 
-    public GeneradorPDF(String rutaSalida) {
+    public GeneradorPDF(
+            String rutaSalida,
+            Connection connection
+    ) {
+
         this.rutaSalida = rutaSalida;
+        this.connection = connection;
     }
 
-    /**
-     * Genera reporte de ocupación de cajones
-     */
-    public boolean generarReporteOcupacion(String estacionamiento, int totalCajones, 
-                                           int disponibles, int ocupados, int mantenimiento) {
+    public boolean generarPdfDia(
+            LocalDate fecha
+    ) {
+
+        return generarPdfFiltrado(
+                "PDF_DIA_" + fecha,
+                "DATE(%s) = '" + fecha + "'"
+        );
+    }
+
+    public boolean generarPdfMes(
+            int anio,
+            int mes
+    ) {
+
+        return generarPdfFiltrado(
+                "PDF_MES_" + anio + "_" + mes,
+                "MONTH(%s)=" + mes +
+                " AND YEAR(%s)=" + anio
+        );
+    }
+
+    public boolean generarPdfAnio(
+            int anio
+    ) {
+
+        return generarPdfFiltrado(
+                "PDF_ANIO_" + anio,
+                "YEAR(%s)=" + anio
+        );
+    }
+
+    public boolean generarPdfCompleto() {
+
+        return generarPdfFiltrado(
+                "PDF_BASE_COMPLETA",
+                null
+        );
+    }
+
+    private boolean generarPdfFiltrado(
+            String nombreArchivo,
+            String filtro
+    ) {
+
         try {
-            String nombre = "Reporte_Ocupacion_" + LocalDate.now() + ".pdf";
-            String rutaCompleta = rutaSalida + File.separator + nombre;
 
-            // Aquí se agregaría la lógica con iText
-            // Por ahora creamos un archivo vacío como placeholder
-            File archivo = new File(rutaCompleta);
+            String rutaCompleta =
+                    rutaSalida
+                    + File.separator
+                    + nombreArchivo
+                    + ".pdf";
+
+            File archivo =
+                    new File(rutaCompleta);
+
             archivo.getParentFile().mkdirs();
-            archivo.createNewFile();
 
-            System.out.println("PDF generado: " + rutaCompleta);
+            PdfWriter writer =
+                    new PdfWriter(rutaCompleta);
+
+            PdfDocument pdf =
+                    new PdfDocument(writer);
+
+            Document document =
+                    new Document(pdf);
+
+            document.add(
+                    new Paragraph(
+                            "REPORTE BASE DE DATOS"
+                    )
+            );
+
+            document.add(
+                    new Paragraph(
+                            "Generado: "
+                            + LocalDate.now()
+                    )
+            );
+
+            Statement tablasStmt =
+                    connection.createStatement();
+
+            ResultSet tablas =
+                    tablasStmt.executeQuery(
+                            "SHOW TABLES"
+                    );
+
+            System.out.println("TABLAS ENCONTRADAS:");
+
+            while(tablas.next()) {
+
+                String tabla =
+                        tablas.getString(1);
+
+                System.out.println(tabla);
+
+                try {
+
+                    document.add(
+                            new Paragraph(
+                                    "\n=============================="
+                            )
+                    );
+
+                    document.add(
+                            new Paragraph(
+                                    "TABLA: " + tabla
+                            )
+                    );
+
+                    System.out.println(
+                            "Exportando tabla: "
+                            + tabla
+                    );
+
+                    Statement st =
+                            connection.createStatement();
+
+                    String columnaFecha =
+                            obtenerColumnaFecha(
+                                    tabla
+                            );
+
+                    ResultSet rs;
+
+                    if(columnaFecha != null
+                            && filtro != null) {
+
+                        String query =
+                                "SELECT * FROM `"
+                                + tabla
+                                + "` WHERE "
+                                + String.format(
+                                        filtro,
+                                        columnaFecha,
+                                        columnaFecha
+                                );
+
+                        rs = st.executeQuery(query);
+
+                    } else {
+
+                        rs = st.executeQuery(
+                                "SELECT * FROM `"
+                                + tabla
+                                + "`"
+                        );
+                    }
+
+                    ResultSetMetaData rsMeta =
+                            rs.getMetaData();
+
+                    int columnas =
+                            rsMeta.getColumnCount();
+
+                    int totalFilas = 0;
+
+                    while(rs.next()) {
+
+                        totalFilas++;
+
+                        StringBuilder fila =
+                                new StringBuilder();
+
+                        for(int i = 1;
+                            i <= columnas;
+                            i++) {
+
+                            fila.append(
+                                    rsMeta.getColumnName(i)
+                            );
+
+                            fila.append(": ");
+
+                            Object valor =
+                                    rs.getObject(i);
+
+                            fila.append(
+                                    valor != null
+                                    ? valor.toString()
+                                    : "NULL"
+                            );
+
+                            fila.append(" | ");
+                        }
+
+                        document.add(
+                                new Paragraph(
+                                        fila.toString()
+                                )
+                        );
+
+                        System.out.println(
+                                fila
+                        );
+                    }
+
+                    document.add(
+                            new Paragraph(
+                                    "TOTAL REGISTROS: "
+                                    + totalFilas
+                            )
+                    );
+
+                    rs.close();
+                    st.close();
+
+                } catch(Exception ex) {
+
+                    document.add(
+                            new Paragraph(
+                                    "ERROR EN TABLA: "
+                                    + tabla
+                            )
+                    );
+
+                    System.out.println(
+                            "Error exportando tabla: "
+                            + tabla
+                    );
+
+                    ex.printStackTrace();
+                }
+            }
+
+            tablas.close();
+            tablasStmt.close();
+
+            document.close();
+
+            System.out.println(
+                    "PDF generado: "
+                    + rutaCompleta
+            );
+
             return true;
-        } catch (Exception ex) {
-            System.err.println("Error generando PDF: " + ex.getMessage());
+
+        } catch(Exception ex) {
+
+            ex.printStackTrace();
             return false;
         }
     }
 
-    /**
-     * Genera reporte de ingresos del día
-     */
-    public boolean generarReporteIngresos(LocalDate fecha, double totalIngresos, 
-                                          int totalRegistros) {
-        try {
-            String nombre = "Reporte_Ingresos_" + fecha + ".pdf";
-            String rutaCompleta = rutaSalida + File.separator + nombre;
+    private String obtenerColumnaFecha(
+            String tabla
+    ) {
 
-            File archivo = new File(rutaCompleta);
-            archivo.getParentFile().mkdirs();
-            archivo.createNewFile();
+        switch(tabla) {
 
-            System.out.println("PDF generado: " + rutaCompleta);
-            return true;
-        } catch (Exception ex) {
-            System.err.println("Error generando PDF: " + ex.getMessage());
-            return false;
+            case "registros_entrada_salida":
+                return "fecha_entrada";
+
+            case "historial_eventos":
+                return "fecha";
+
+            case "pensiones":
+                return "fecha_inicio";
+
+            case "facturas_restaurante":
+                return "fecha";
+
+            case "notificaciones":
+                return "fecha";
+
+            case "clientes":
+                return "fecha_registro";
+
+            case "vehiculos":
+                return "fecha_registro";
+
+            case "usuarios":
+                return "fecha_creacion";
+
+            case "clientes_restaurante":
+                return "fecha_registro";
+
+            case "registros_uso_restaurante":
+                return "fecha";
+
+            case "promociones":
+                return "fecha_inicio";
+
+            case "convenios_restaurante":
+                return "fecha_inicio";
+
+            default:
+                return null;
         }
-    }
-
-    /**
-     * Genera reporte de pensiones activas
-     */
-    public boolean generarReportePensiones(int totalActivas, double ingresoMensual) {
-        try {
-            String nombre = "Reporte_Pensiones_" + LocalDate.now() + ".pdf";
-            String rutaCompleta = rutaSalida + File.separator + nombre;
-
-            File archivo = new File(rutaCompleta);
-            archivo.getParentFile().mkdirs();
-            archivo.createNewFile();
-
-            System.out.println("PDF generado: " + rutaCompleta);
-            return true;
-        } catch (Exception ex) {
-            System.err.println("Error generando PDF: " + ex.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Genera reporte consolidado de cadena completa
-     */
-    public boolean generarReporteConsolidado(LocalDate fecha, List<String> estacionamientos,
-                                             double totalIngresos, int totalRegistros) {
-        try {
-            String nombre = "Reporte_Consolidado_" + fecha + ".pdf";
-            String rutaCompleta = rutaSalida + File.separator + nombre;
-
-            File archivo = new File(rutaCompleta);
-            archivo.getParentFile().mkdirs();
-            archivo.createNewFile();
-
-            System.out.println("PDF generado: " + rutaCompleta);
-            return true;
-        } catch (Exception ex) {
-            System.err.println("Error generando PDF: " + ex.getMessage());
-            return false;
-        }
-    }
-
-    public String getRutaSalida() {
-        return rutaSalida;
-    }
-
-    public void setRutaSalida(String rutaSalida) {
-        this.rutaSalida = rutaSalida;
     }
 }

@@ -7,6 +7,7 @@ com\estacionamiento\dao\PensionDAO.class
 com\estacionamiento\modelos\Restaurante.class
 com\estacionamiento\utilidades\GraficoPastel.class
 com\estacionamiento\modelos\Promocion.class
+com\estacionamiento\ui\modules\ReportesModule.class
 com\estacionamiento\utilidades\EmailSender.class
 com\estacionamiento\ui\main\Sidebar.class
 com\estacionamiento\MainTest.class
@@ -84,6 +85,7 @@ com\estacionamiento\utilidades\TablaPersonalizada.class
 com\estacionamiento\ui\modules\NotificacionesModule.class
 com\estacionamiento\ui\modules\PreciosImpl.class
 com\estacionamiento\modelos\Estacionamiento.class
+com\estacionamiento\ui\modules\ReportesImpl.class
 com\estacionamiento\ui\modules\EstacionamientosModule.class
 com\estacionamiento\modelos\Cajon.class
 com\estacionamiento\ui\main\MainView.class

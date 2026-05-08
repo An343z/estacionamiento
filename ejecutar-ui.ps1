@@ -56,15 +56,15 @@ else {
 }
 Write-Host ""
 
-# Compilar si no existe el JAR
-if (-not (Test-Path "target\ppark-1.0.0.jar")) {
-    Write-Host "Compilando proyecto..." -ForegroundColor Yellow
-    & "C:\apache-maven-3.9.15-bin\apache-maven-3.9.15\bin\mvn.cmd" clean package -q
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Error en compilacion" -ForegroundColor Red
-        exit 1
-    }
+# Siempre recompilar
+Write-Host "Recompilando proyecto..." -ForegroundColor Yellow
+& "C:\apache-maven-3.9.15-bin\apache-maven-3.9.15\bin\mvn.cmd" clean package -q
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Error en compilacion" -ForegroundColor Red
+    exit 1
 }
+Write-Host "Compilacion exitosa!" -ForegroundColor Green
+Write-Host ""
 
 Write-Host "Iniciando aplicacion..." -ForegroundColor Green
 Write-Host ""
