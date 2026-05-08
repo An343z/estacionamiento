@@ -131,7 +131,10 @@ class DashboardImpl extends ScrollPane {
                 Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
                 Label monto = new Label(String.format("$%.2f", p.getMonto()));
                 monto.setStyle("-fx-text-fill:" + UI.GREEN + ";-fx-font-weight:bold;");
-                Label estado = UI.badge(p.getEstado(), "Activa".equals(p.getEstado()) ? UI.badgeGreen() : UI.badgeGray());
+                String estadoTexto = penCtrl.calcularEstado(p);
+                Label estado = UI.badge(estadoTexto,
+                    "Activa".equals(estadoTexto) ? UI.badgeGreen() :
+                    "Próxima a vencer".equals(estadoTexto) ? UI.badgeBlue() : UI.badgeRed());
 
                 fila.getChildren().addAll(cliente, sp, monto, estado);
                 card.getChildren().add(fila);
