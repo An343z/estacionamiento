@@ -38,6 +38,7 @@ public class Sidebar extends VBox {
         PENSIONES        ("👥", "Pensiones",          "Servicios"),
         PRECIOS          ("💵", "Precios",            "Servicios"),
         PROMOCIONES      ("🎫", "Promociones",        "Servicios"),
+        USUARIOS         ("👥", "Usuarios",           "Sistema"),
         NOTIFICACIONES   ("🔔", "Notificaciones",     "Sistema"),
         REPORTES         ("📈", "Reportes",           "Sistema"),
         CONFIGURACION    ("⚙️",  "Configuración",     "Sistema");
@@ -197,6 +198,7 @@ public class Sidebar extends VBox {
             case REPORTES, PRECIOS, PROMOCIONES  -> s.isAdmin() || s.isEncargado();
             // Caja: todos (cajero, encargado, admin)
             case CAJA -> true;
+            case USUARIOS -> s.isAdmin();
             // El resto también todos
             default -> true;
         };
