@@ -17,15 +17,16 @@ public class RegistroEntradaSalidaDAO {
     }
 
     public boolean crear(RegistroEntradaSalida registro) {
-        String sql = "INSERT INTO registros_entrada_salida (vehiculo_id, cajon_id, fecha_entrada, estado, estacionamiento_id) " +
-                     "VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO registros_entrada_salida (vehiculo_id, cajon_id, fecha_entrada, estado, promocion_aplicada, estacionamiento_id) " +
+                     "VALUES (?, ?, ?, ?, ?, ?)";
         
         try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
             pstmt.setInt(1, registro.getVehiculoId());
             pstmt.setInt(2, registro.getCajonId());
             pstmt.setTimestamp(3, Timestamp.valueOf(registro.getFechaEntrada()));
             pstmt.setString(4, registro.getEstado());
-            pstmt.setInt(5, registro.getEstacionamientoId());
+            pstmt.setString(5, registro.getPromocionAplicada());
+            pstmt.setInt(6, registro.getEstacionamientoId());
             
             pstmt.executeUpdate();
             return true;
@@ -67,13 +68,14 @@ public class RegistroEntradaSalidaDAO {
         return null;
     }
 
-    public boolean finalizarRegistro(int registroId, LocalDateTime fechaSalida, double monto) {
-        String sql = "UPDATE registros_entrada_salida SET fecha_salida = ?, monto = ?, estado = 'Finalizado' WHERE id = ?";
+    public boolean finalizarRegistro(int registroId, LocalDateTime fechaSalida, double monto, String promocionAplicada) {
+        String sql = "UPDATE registros_entrada_salida SET fecha_salida = ?, monto = ?, promocion_aplicada = ?, estado = 'Finalizado' WHERE id = ?";
         
         try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
             pstmt.setTimestamp(1, Timestamp.valueOf(fechaSalida));
             pstmt.setDouble(2, monto);
-            pstmt.setInt(3, registroId);
+            pstmt.setString(3, promocionAplicada);
+            pstmt.setInt(4, registroId);
             
             pstmt.executeUpdate();
             return true;
@@ -116,7 +118,7 @@ public class RegistroEntradaSalidaDAO {
     }
 
     public boolean actualizar(RegistroEntradaSalida registro) {
-        String sql = "UPDATE registros_entrada_salida SET vehiculo_id = ?, cajon_id = ?, fecha_entrada = ?, fecha_salida = ?, monto = ?, estado = ? WHERE id = ?";
+        String sql = "UPDATE registros_entrada_salida SET vehiculo_id = ?, cajon_id = ?, fecha_entrada = ?, fecha_salida = ?, monto = ?, promocion_aplicada = ?, estado = ? WHERE id = ?";
         
         try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
             pstmt.setInt(1, registro.getVehiculoId());
@@ -128,8 +130,9 @@ public class RegistroEntradaSalidaDAO {
                 pstmt.setNull(4, java.sql.Types.TIMESTAMP);
             }
             pstmt.setDouble(5, registro.getMonto());
-            pstmt.setString(6, registro.getEstado());
-            pstmt.setInt(7, registro.getId());
+            pstmt.setString(6, registro.getPromocionAplicada());
+            pstmt.setString(7, registro.getEstado());
+            pstmt.setInt(8, registro.getId());
             
             pstmt.executeUpdate();
             return true;
@@ -187,6 +190,7 @@ public class RegistroEntradaSalidaDAO {
         }
         
         registro.setMonto(rs.getDouble("monto"));
+        registro.setPromocionAplicada(rs.getString("promocion_aplicada"));
         registro.setEstado(rs.getString("estado"));
         registro.setEstacionamientoId(rs.getInt("estacionamiento_id"));
         

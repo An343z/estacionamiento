@@ -206,9 +206,13 @@ class ClientesImpl extends VBox {
     private void colAcciones() {
         TableColumn<Cliente, Void> c = new TableColumn<>("Acciones");
         c.setCellFactory(col -> new TableCell<>() {
+            final Button historial = UI.btnPrimario("📜 Historial");
             final Button edit = UI.btnSecundario("✏️ Editar");
             final Button del  = UI.btnPeligro("🗑️");
-            { edit.setStyle(edit.getStyle() + UI.BTN_SMALL); del.setStyle(del.getStyle() + UI.BTN_SMALL);
+            { historial.setStyle(historial.getStyle() + UI.BTN_SMALL);
+              edit.setStyle(edit.getStyle() + UI.BTN_SMALL);
+              del.setStyle(del.getStyle() + UI.BTN_SMALL);
+              historial.setOnAction(e -> mostrarHistorial(getTableView().getItems().get(getIndex())));
               edit.setOnAction(e -> formulario(getTableView().getItems().get(getIndex())));
               del.setOnAction(e -> {
                   Cliente cl = getTableView().getItems().get(getIndex());
@@ -219,10 +223,10 @@ class ClientesImpl extends VBox {
             @Override protected void updateItem(Void v, boolean empty) {
                 super.updateItem(v, empty);
                 if (empty) { setGraphic(null); return; }
-                HBox h = new HBox(6, edit, del); h.setAlignment(Pos.CENTER_LEFT); setGraphic(h);
+                HBox h = new HBox(6, historial, edit, del); h.setAlignment(Pos.CENTER_LEFT); setGraphic(h);
             }
         });
-        c.setPrefWidth(150);
+        c.setPrefWidth(250);
         tabla.getColumns().add(c);
     }
 
@@ -240,6 +244,52 @@ class ClientesImpl extends VBox {
                            || (c.getEmail() != null && c.getEmail().toLowerCase().contains(q.toLowerCase())))
                 .toList());
         } catch (Exception e) { cargar(); }
+    }
+
+    private void mostrarHistorial(Cliente cliente) {
+        Stage v = new Stage(); v.initModality(Modality.APPLICATION_MODAL);
+        v.setTitle("Historial de " + cliente.getNombre() + " " + cliente.getApellido()); v.setResizable(false);
+
+        HistorialController historialCtrl = new HistorialController();
+        TableView<HistorialEvento> tablaHistorial = new TableView<>();
+        UI.estilizarTabla(tablaHistorial);
+        ObservableList<HistorialEvento> datosHistorial = FXCollections.observableArrayList();
+        tablaHistorial.setItems(datosHistorial);
+        VBox.setVgrow(tablaHistorial, Priority.ALWAYS);
+
+        TableColumn<HistorialEvento, String> colFecha = new TableColumn<>("Fecha");
+        colFecha.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(
+            c.getValue().getFecha() != null ? c.getValue().getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : ""));
+        colFecha.setPrefWidth(140);
+
+        TableColumn<HistorialEvento, String> colTipo = new TableColumn<>("Tipo");
+        colTipo.setCellValueFactory(new PropertyValueFactory<>("tipo"));
+        colTipo.setPrefWidth(120);
+
+        TableColumn<HistorialEvento, String> colDesc = new TableColumn<>("Descripción");
+        colDesc.setCellValueFactory(new PropertyValueFactory<>("descripcion"));
+        colDesc.setPrefWidth(300);
+
+        TableColumn<HistorialEvento, String> colMonto = new TableColumn<>("Monto");
+        colMonto.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(
+            c.getValue().getMonto() > 0 ? String.format("$%.2f", c.getValue().getMonto()) : "-"));
+        colMonto.setPrefWidth(100);
+
+        tablaHistorial.getColumns().addAll(colFecha, colTipo, colDesc, colMonto);
+        tablaHistorial.setPlaceholder(UI.panelVacio("🕒", "No hay eventos para este cliente"));
+
+        try {
+            datosHistorial.setAll(historialCtrl.obtenerEventosPorCliente(cliente.getId()));
+        } catch (Exception e) {
+            UI.mostrarError("Error", e.getMessage());
+        }
+
+        VBox cont = new VBox(14, UI.encabezado("Historial de cliente", "Eventos y movimientos registrados"), tablaHistorial);
+        cont.setPadding(new Insets(24));
+        cont.setPrefSize(700, 420);
+
+        v.setScene(new Scene(cont));
+        v.showAndWait();
     }
 
     private void formulario(Cliente editar) {
@@ -717,7 +767,11 @@ class RegistrosImpl extends VBox {
             c.getValue().getFechaSalida()!=null?c.getValue().getFechaSalida().format(fmt):"En curso"));
         TableColumn<RegistroEntradaSalida,String> colMonto=new TableColumn<>("Monto");
         colMonto.setCellValueFactory(c->new javafx.beans.property.SimpleStringProperty(
-            c.getValue().getMonto()>0?String.format("$%.2f",c.getValue().getMonto()):"-"));
+            c.getValue().getMonto()>0?String.format("$%.2f",c.getValue().getMonto()):c.getValue().getFechaSalida()!=null?"$0.00":"-"));
+        TableColumn<RegistroEntradaSalida,String> colPromo=new TableColumn<>("Promoción");
+        colPromo.setCellValueFactory(c->new javafx.beans.property.SimpleStringProperty(
+            c.getValue().getPromocionAplicada()!=null?c.getValue().getPromocionAplicada():"-"));
+        colPromo.setPrefWidth(180);
         TableColumn<RegistroEntradaSalida,String> colEst=new TableColumn<>("Estado");
         colEst.setCellValueFactory(new PropertyValueFactory<>("estado"));
         colEst.setCellFactory(col->new TableCell<>(){
@@ -727,7 +781,7 @@ class RegistrosImpl extends VBox {
             }
         });
 
-        tabla.getColumns().addAll(colId,colVeh,colCaj,colEnt,colSal,colMonto,colEst);
+        tabla.getColumns().addAll(colId,colVeh,colCaj,colEnt,colSal,colMonto,colPromo,colEst);
         tabla.setPlaceholder(UI.panelVacio("🚗","No hay registros"));
 
         getChildren().addAll(UI.encabezado("Entrada / Salida","Registro de movimientos del estacionamiento"),
@@ -825,11 +879,12 @@ class PensionesImpl extends VBox {
         TableColumn<Pension,Integer> colCli=new TableColumn<>("Cliente ID"); colCli.setCellValueFactory(new PropertyValueFactory<>("clienteId"));
         TableColumn<Pension,Integer> colVeh=new TableColumn<>("Vehículo ID"); colVeh.setCellValueFactory(new PropertyValueFactory<>("vehiculoId"));
         TableColumn<Pension,Integer> colCaj=new TableColumn<>("Cajón ID"); colCaj.setCellValueFactory(new PropertyValueFactory<>("cajonId"));
-        TableColumn<Pension,String> colEst=new TableColumn<>("Estado"); colEst.setCellValueFactory(new PropertyValueFactory<>("estado"));
+        TableColumn<Pension,String> colEst=new TableColumn<>("Estado");
+        colEst.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(ctrl.calcularEstado(c.getValue())));
         colEst.setCellFactory(col->new TableCell<>(){
             @Override protected void updateItem(String v,boolean empty){
                 super.updateItem(v,empty); if(empty||v==null){setGraphic(null);return;}
-                setGraphic(UI.badge(v,"Activa".equals(v)?UI.badgeGreen():"Finalizada".equals(v)?UI.badgeGray():UI.badgeRed()));
+                setGraphic(UI.badge(v,"Activa".equals(v)?UI.badgeGreen():"Próxima a vencer".equals(v)?UI.badgeBlue():UI.badgeRed()));
             }
         });
         TableColumn<Pension,String> colMonto=new TableColumn<>("Monto");
@@ -845,8 +900,20 @@ class PensionesImpl extends VBox {
                   }}); }
             @Override protected void updateItem(Void v,boolean empty){
                 super.updateItem(v,empty); if(empty){setGraphic(null);return;}
+                Pension p=getTableView().getItems().get(getIndex());
+                String estado = ctrl.calcularEstado(p);
+                boolean vencida = "Vencida".equals(estado);
+                e.setDisable(vencida);
+                d.setDisable(vencida);
+                if (vencida) {
+                    e.setTooltip(new Tooltip("La pensión está vencida y no puede editarse"));
+                    d.setTooltip(new Tooltip("La pensión vencida no puede cancelarse"));
+                } else {
+                    e.setTooltip(null);
+                    d.setTooltip(null);
+                }
                 HBox h=new HBox(6,e,d);h.setAlignment(Pos.CENTER_LEFT);setGraphic(h);}
-        }); colAcc.setPrefWidth(120);
+        }); colAcc.setPrefWidth(160);
 
         tabla.getColumns().addAll(colId,colCli,colVeh,colCaj,colEst,colMonto,colAcc);
         tabla.setPlaceholder(UI.panelVacio("👥","No hay pensiones"));
@@ -873,10 +940,13 @@ class PensionesImpl extends VBox {
         dpInicio.setMaxWidth(Double.MAX_VALUE); dpFin.setMaxWidth(Double.MAX_VALUE);
         dpInicio.setStyle(UI.FIELD); dpFin.setStyle(UI.FIELD);
 
+        boolean pensionVencida = false;
         if(editar!=null){ fCli.setText(String.valueOf(editar.getClienteId())); fVeh.setText(String.valueOf(editar.getVehiculoId()));
             fCaj.setText(String.valueOf(editar.getCajonId())); fMonto.setText(String.valueOf(editar.getMonto()));
             if(editar.getFechaInicio()!=null) dpInicio.setValue(editar.getFechaInicio().toLocalDate());
-            if(editar.getFechaFin()!=null) dpFin.setValue(editar.getFechaFin().toLocalDate()); }
+            if(editar.getFechaFin()!=null) dpFin.setValue(editar.getFechaFin().toLocalDate());
+            pensionVencida = ctrl.esPensionVencida(editar);
+        }
 
         GridPane grid=new GridPane(); grid.setHgap(12); grid.setVgap(12);
         grid.add(UI.grupoCampo("ID Cliente *",fCli),0,0);
@@ -889,6 +959,11 @@ class PensionesImpl extends VBox {
         grid.getColumnConstraints().addAll(cc,new ColumnConstraints(){{setPercentWidth(50);}});
 
         Label err=UI.errorLabel();
+        Label avisoVencida=new Label();
+        avisoVencida.setStyle("-fx-text-fill:#92400e;-fx-font-weight:bold;");
+        if (pensionVencida) {
+            avisoVencida.setText("Esta pensión ya está vencida y no puede editarse. Cree una nueva pensión para renovarla.");
+        }
         Button guardar=UI.btnPrimario(editar==null?"Guardar":"Actualizar");
         Button cancelar=UI.btnSecundario("Cancelar"); cancelar.setOnAction(e->ven.close());
 
@@ -914,7 +989,10 @@ class PensionesImpl extends VBox {
         });
 
         HBox bRow=new HBox(10,cancelar,guardar); bRow.setAlignment(Pos.CENTER_RIGHT);
-        cont.getChildren().addAll(titulo,UI.separador(),grid,err,UI.separador(),bRow);
+        cont.getChildren().addAll(titulo,UI.separador(),grid,err,avisoVencida,UI.separador(),bRow);
+        if (pensionVencida) {
+            guardar.setDisable(true);
+        }
         ven.setScene(new Scene(cont)); ven.showAndWait();
     }
 }
@@ -1036,8 +1114,19 @@ class PromocionesImpl extends VBox {
         Button btnNuevo=UI.btnPrimario("+ Nueva promoción"); btnNuevo.setOnAction(e->formulario(null));
         tabla=new TableView<>(); UI.estilizarTabla(tabla); datos=FXCollections.observableArrayList(); tabla.setItems(datos); VBox.setVgrow(tabla,Priority.ALWAYS);
 
-        col("Nombre","nombre",200); colNum("Descuento %","descuentoPorcentaje");
-        col("Tipo vehículo","tipoVehiculo",130);
+        col("Nombre","nombre",180);
+        colNum("Descuento %","descuentoPorcentaje");
+        TableColumn<Promocion,String> colFijo=new TableColumn<>("Descuento fijo");
+        colFijo.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(
+            String.format("$%.2f", c.getValue().getDescuentoFijo())));
+        colFijo.setPrefWidth(110);
+        tabla.getColumns().add(colFijo);
+        TableColumn<Promocion,String> colHoras=new TableColumn<>("Horas gratis");
+        colHoras.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(
+            String.valueOf(c.getValue().getHorasGratis())));
+        colHoras.setPrefWidth(100);
+        tabla.getColumns().add(colHoras);
+        col("Tipo vehículo","tipoVehiculo",120);
         TableColumn<Promocion,String> colVig=new TableColumn<>("Vigente");
         colVig.setCellValueFactory(c->new javafx.beans.property.SimpleStringProperty(c.getValue().isActiva()?"Sí":"No"));
         colVig.setCellFactory(col->new TableCell<>(){@Override protected void updateItem(String v,boolean empty){super.updateItem(v,empty); if(empty||v==null){setGraphic(null);return;} setGraphic(UI.badge(v,"Sí".equals(v)?UI.badgeGreen():UI.badgeGray()));}});
@@ -1069,6 +1158,7 @@ class PromocionesImpl extends VBox {
         Label titulo=new Label(editar==null?"➕ Nueva promoción":"✏️ Editar promoción"); titulo.setFont(Font.font("System",FontWeight.BOLD,15));
 
         TextField fNombre=UI.campo("Nombre de la promoción"); TextField fDesc=UI.campo("Descripción"); TextField fDescPct=UI.campo("Ej: 20");
+        TextField fDescFijo=UI.campo("Ej: 150.00"); TextField fHorasGratis=UI.campo("Ej: 2");
         ComboBox<String> comboTipo=UI.combo(); comboTipo.getItems().addAll("Todos","Auto","Moto","Camioneta"); comboTipo.setValue("Todos");
         CheckBox cbActiva=new CheckBox("Promoción activa"); cbActiva.setSelected(true);
         TextField fEst=UI.campo("ID estacionamiento"); Session s=Session.getInstance(); fEst.setText(String.valueOf(s.getEstacionamientoId()!=null?s.getEstacionamientoId():1));
@@ -1077,24 +1167,27 @@ class PromocionesImpl extends VBox {
         dpIni.setMaxWidth(Double.MAX_VALUE); dpFin.setMaxWidth(Double.MAX_VALUE); dpIni.setStyle(UI.FIELD); dpFin.setStyle(UI.FIELD);
 
         if(editar!=null){ fNombre.setText(editar.getNombre()); fDesc.setText(editar.getDescripcion());
-            fDescPct.setText(String.valueOf(editar.getDescuentoPorcentaje())); if(editar.getTipoVehiculo()!=null)comboTipo.setValue(editar.getTipoVehiculo());
+            fDescPct.setText(String.valueOf(editar.getDescuentoPorcentaje())); fDescFijo.setText(String.valueOf(editar.getDescuentoFijo()));
+            fHorasGratis.setText(String.valueOf(editar.getHorasGratis())); if(editar.getTipoVehiculo()!=null)comboTipo.setValue(editar.getTipoVehiculo());
             cbActiva.setSelected(editar.isActiva()); if(editar.getFechaInicio()!=null)dpIni.setValue(editar.getFechaInicio().toLocalDate());
             if(editar.getFechaFin()!=null)dpFin.setValue(editar.getFechaFin().toLocalDate()); }
 
-        VBox form=new VBox(12); form.getChildren().addAll(UI.grupoCampo("Nombre *",fNombre),UI.grupoCampo("Descripción",fDesc),UI.grupoCampo("Descuento % *",fDescPct),UI.grupoCampo("Tipo vehículo",comboTipo),UI.grupoCampo("Desde",dpIni),UI.grupoCampo("Hasta",dpFin),cbActiva);
+        VBox form=new VBox(12); form.getChildren().addAll(UI.grupoCampo("Nombre *",fNombre),UI.grupoCampo("Descripción",fDesc),UI.grupoCampo("Descuento %",fDescPct),UI.grupoCampo("Descuento fijo",fDescFijo),UI.grupoCampo("Horas gratis",fHorasGratis),UI.grupoCampo("Tipo vehículo",comboTipo),UI.grupoCampo("Desde",dpIni),UI.grupoCampo("Hasta",dpFin),cbActiva);
 
         Label err=UI.errorLabel();
         Button guardar=UI.btnPrimario(editar==null?"Guardar":"Actualizar"); Button cancelar=UI.btnSecundario("Cancelar"); cancelar.setOnAction(e->ven.close());
         guardar.setOnAction(e->{
             try{
-                double pct=Double.parseDouble(fDescPct.getText().trim());
+                double pct=Double.parseDouble(fDescPct.getText().trim().isEmpty()?"0":fDescPct.getText().trim());
+                double fijo=Double.parseDouble(fDescFijo.getText().trim().isEmpty()?"0":fDescFijo.getText().trim());
+                int horas=Integer.parseInt(fHorasGratis.getText().trim().isEmpty()?"0":fHorasGratis.getText().trim());
                 int estId=Integer.parseInt(fEst.getText().trim());
-                Promocion p=editar!=null?editar:new Promocion(fNombre.getText().trim(),fDesc.getText().trim(),pct,dpIni.getValue().atStartOfDay(),dpFin.getValue().atTime(23,59),comboTipo.getValue(),estId);
-                if(editar!=null){ p.setNombre(fNombre.getText().trim()); p.setDescripcion(fDesc.getText().trim()); p.setDescuentoPorcentaje(pct); p.setTipoVehiculo(comboTipo.getValue()); p.setActiva(cbActiva.isSelected()); p.setFechaInicio(dpIni.getValue().atStartOfDay()); p.setFechaFin(dpFin.getValue().atTime(23,59)); }
+                Promocion p=editar!=null?editar:new Promocion(fNombre.getText().trim(),fDesc.getText().trim(),pct,fijo,horas,dpIni.getValue().atStartOfDay(),dpFin.getValue().atTime(23,59),comboTipo.getValue(),estId);
+                if(editar!=null){ p.setNombre(fNombre.getText().trim()); p.setDescripcion(fDesc.getText().trim()); p.setDescuentoPorcentaje(pct); p.setDescuentoFijo(fijo); p.setHorasGratis(horas); p.setTipoVehiculo(comboTipo.getValue()); p.setActiva(cbActiva.isSelected()); p.setFechaInicio(dpIni.getValue().atStartOfDay()); p.setFechaFin(dpFin.getValue().atTime(23,59)); }
                 String error=ctrl.validarPromocion(p); if(error!=null){UI.setError(err,error);return;}
                 boolean ok=editar==null?ctrl.crearPromocion(p):ctrl.actualizarPromocion(p);
                 if(ok){cargar();ven.close();}else UI.setError(err,"Error al guardar.");
-            }catch(NumberFormatException ex){UI.setError(err,"El descuento debe ser numérico.");}
+            }catch(NumberFormatException ex){UI.setError(err,"Los valores numéricos deben ser válidos.");}
             catch(Exception ex){UI.setError(err,ex.getMessage());}
         });
         HBox bRow=new HBox(10,cancelar,guardar); bRow.setAlignment(Pos.CENTER_RIGHT);

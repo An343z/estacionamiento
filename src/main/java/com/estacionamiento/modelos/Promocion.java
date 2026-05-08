@@ -10,6 +10,8 @@ public class Promocion {
     private String nombre;
     private String descripcion;
     private double descuentoPorcentaje;
+    private double descuentoFijo;
+    private int horasGratis;
     private LocalDateTime fechaInicio;
     private LocalDateTime fechaFin;
     private String tipoVehiculo; // "Todos", "Auto", "Moto", "Camioneta"
@@ -19,10 +21,12 @@ public class Promocion {
     public Promocion() {
     }
 
-    public Promocion(String nombre, String descripcion, double descuentoPorcentaje, LocalDateTime fechaInicio, LocalDateTime fechaFin, String tipoVehiculo, int estacionamientoId) {
+    public Promocion(String nombre, String descripcion, double descuentoPorcentaje, double descuentoFijo, int horasGratis, LocalDateTime fechaInicio, LocalDateTime fechaFin, String tipoVehiculo, int estacionamientoId) {
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.descuentoPorcentaje = descuentoPorcentaje;
+        this.descuentoFijo = descuentoFijo;
+        this.horasGratis = horasGratis;
         this.fechaInicio = fechaInicio;
         this.fechaFin = fechaFin;
         this.tipoVehiculo = tipoVehiculo;
@@ -61,6 +65,22 @@ public class Promocion {
 
     public void setDescuentoPorcentaje(double descuentoPorcentaje) {
         this.descuentoPorcentaje = descuentoPorcentaje;
+    }
+
+    public double getDescuentoFijo() {
+        return descuentoFijo;
+    }
+
+    public void setDescuentoFijo(double descuentoFijo) {
+        this.descuentoFijo = descuentoFijo;
+    }
+
+    public int getHorasGratis() {
+        return horasGratis;
+    }
+
+    public void setHorasGratis(int horasGratis) {
+        this.horasGratis = horasGratis;
     }
 
     public LocalDateTime getFechaInicio() {
@@ -105,6 +125,6 @@ public class Promocion {
 
     @Override
     public String toString() {
-        return nombre + " - " + descuentoPorcentaje + "% descuento";
+        return nombre + " - " + descuentoPorcentaje + "% / $" + descuentoFijo + " / " + horasGratis + "h gratis";
     }
 }

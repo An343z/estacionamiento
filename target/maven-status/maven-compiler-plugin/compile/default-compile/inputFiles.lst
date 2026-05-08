@@ -4,6 +4,7 @@ C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\c
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\controladores\ClienteController.java
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\controladores\ConfiguracionController.java
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\controladores\EstacionamientoController.java
+C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\controladores\HistorialController.java
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\controladores\NotificacionController.java
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\controladores\PensionController.java
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\controladores\PrecioController.java
@@ -16,6 +17,7 @@ C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\d
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\dao\ConexionDB.java
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\dao\ConfiguracionDAO.java
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\dao\EstacionamientoDAO.java
+C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\dao\HistorialEventoDAO.java
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\dao\NotificacionDAO.java
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\dao\PensionDAO.java
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\dao\PrecioDAO.java
@@ -32,6 +34,7 @@ C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\m
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\modelos\ConvenioRestaurante.java
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\modelos\Estacionamiento.java
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\modelos\FacturaRestaurante.java
+C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\modelos\HistorialEvento.java
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\modelos\Notificacion.java
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\modelos\Pension.java
 C:\Users\Alex\StudioProjects\estacionamiento\src\main\java\com\estacionamiento\modelos\Precio.java

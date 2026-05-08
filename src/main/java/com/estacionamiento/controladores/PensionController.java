@@ -2,6 +2,8 @@ package com.estacionamiento.controladores;
 
 import com.estacionamiento.dao.PensionDAO;
 import com.estacionamiento.modelos.Pension;
+import com.estacionamiento.utilidades.ConfigManager;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -62,5 +64,17 @@ public class PensionController {
         return pensiones.stream()
             .mapToDouble(Pension::getMonto)
             .sum();
+    }
+
+    public String calcularEstado(Pension pension) {
+        int diasAntes = ConfigManager.getInstancia().obtenerInt("recordatorio.pension.dias");
+        if (diasAntes <= 0) {
+            diasAntes = 3;
+        }
+        return pension.getEstadoCalculado(diasAntes);
+    }
+
+    public boolean esPensionVencida(Pension pension) {
+        return "Vencida".equals(calcularEstado(pension));
     }
 }

@@ -1,5 +1,6 @@
 package com.estacionamiento.modelos;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -101,6 +102,25 @@ public class Pension {
 
     public void setEstacionamientoId(int estacionamientoId) {
         this.estacionamientoId = estacionamientoId;
+    }
+
+    public String getEstadoCalculado(int diasAntesVencimiento) {
+        if (fechaFin == null) {
+            return estado != null ? estado : "Activa";
+        }
+        LocalDate hoy = LocalDate.now();
+        LocalDate fechaFinLocal = fechaFin.toLocalDate();
+        if (fechaFinLocal.isBefore(hoy)) {
+            return "Vencida";
+        }
+        if (!fechaFinLocal.isAfter(hoy.plusDays(diasAntesVencimiento))) {
+            return "Próxima a vencer";
+        }
+        return estado != null ? estado : "Activa";
+    }
+
+    public boolean estaVencida(int diasAntesVencimiento) {
+        return "Vencida".equals(getEstadoCalculado(diasAntesVencimiento));
     }
 
     @Override

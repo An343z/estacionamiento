@@ -12,6 +12,7 @@ public class RegistroEntradaSalida {
     private LocalDateTime fechaEntrada;
     private LocalDateTime fechaSalida;
     private double monto;
+    private String promocionAplicada;
     private String estado; // "Activo", "Finalizado"
     private int estacionamientoId;
 
@@ -73,6 +74,14 @@ public class RegistroEntradaSalida {
 
     public void setMonto(double monto) {
         this.monto = monto;
+    }
+
+    public String getPromocionAplicada() {
+        return promocionAplicada;
+    }
+
+    public void setPromocionAplicada(String promocionAplicada) {
+        this.promocionAplicada = promocionAplicada;
     }
 
     public String getEstado() {

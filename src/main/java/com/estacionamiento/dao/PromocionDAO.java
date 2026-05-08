@@ -17,18 +17,20 @@ public class PromocionDAO {
     }
 
     public boolean crear(Promocion promocion) {
-        String sql = "INSERT INTO promociones (nombre, descripcion, descuento_porcentaje, fecha_inicio, fecha_fin, tipo_vehiculo, estacionamiento_id, activa) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO promociones (nombre, descripcion, descuento_porcentaje, descuento_fijo, horas_gratis, fecha_inicio, fecha_fin, tipo_vehiculo, estacionamiento_id, activa) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
             pstmt.setString(1, promocion.getNombre());
             pstmt.setString(2, promocion.getDescripcion());
             pstmt.setDouble(3, promocion.getDescuentoPorcentaje());
-            pstmt.setTimestamp(4, Timestamp.valueOf(promocion.getFechaInicio()));
-            pstmt.setTimestamp(5, Timestamp.valueOf(promocion.getFechaFin()));
-            pstmt.setString(6, promocion.getTipoVehiculo());
-            pstmt.setInt(7, promocion.getEstacionamientoId());
-            pstmt.setBoolean(8, promocion.isActiva());
+            pstmt.setDouble(4, promocion.getDescuentoFijo());
+            pstmt.setInt(5, promocion.getHorasGratis());
+            pstmt.setTimestamp(6, Timestamp.valueOf(promocion.getFechaInicio()));
+            pstmt.setTimestamp(7, Timestamp.valueOf(promocion.getFechaFin()));
+            pstmt.setString(8, promocion.getTipoVehiculo());
+            pstmt.setInt(9, promocion.getEstacionamientoId());
+            pstmt.setBoolean(10, promocion.isActiva());
             
             pstmt.executeUpdate();
             return true;
@@ -70,17 +72,19 @@ public class PromocionDAO {
     }
 
     public boolean actualizar(Promocion promocion) {
-        String sql = "UPDATE promociones SET nombre = ?, descripcion = ?, descuento_porcentaje = ?, " +
-                     "fecha_fin = ?, tipo_vehiculo = ?, activa = ? WHERE id = ?";
+        String sql = "UPDATE promociones SET nombre = ?, descripcion = ?, descuento_porcentaje = ?, descuento_fijo = ?, horas_gratis = ?, fecha_inicio = ?, fecha_fin = ?, tipo_vehiculo = ?, activa = ? WHERE id = ?";
         
         try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
             pstmt.setString(1, promocion.getNombre());
             pstmt.setString(2, promocion.getDescripcion());
             pstmt.setDouble(3, promocion.getDescuentoPorcentaje());
-            pstmt.setTimestamp(4, Timestamp.valueOf(promocion.getFechaFin()));
-            pstmt.setString(5, promocion.getTipoVehiculo());
-            pstmt.setBoolean(6, promocion.isActiva());
-            pstmt.setInt(7, promocion.getId());
+            pstmt.setDouble(4, promocion.getDescuentoFijo());
+            pstmt.setInt(5, promocion.getHorasGratis());
+            pstmt.setTimestamp(6, Timestamp.valueOf(promocion.getFechaInicio()));
+            pstmt.setTimestamp(7, Timestamp.valueOf(promocion.getFechaFin()));
+            pstmt.setString(8, promocion.getTipoVehiculo());
+            pstmt.setBoolean(9, promocion.isActiva());
+            pstmt.setInt(10, promocion.getId());
             
             pstmt.executeUpdate();
             return true;
@@ -135,6 +139,8 @@ public class PromocionDAO {
         promocion.setNombre(rs.getString("nombre"));
         promocion.setDescripcion(rs.getString("descripcion"));
         promocion.setDescuentoPorcentaje(rs.getDouble("descuento_porcentaje"));
+        promocion.setDescuentoFijo(rs.getDouble("descuento_fijo"));
+        promocion.setHorasGratis(rs.getInt("horas_gratis"));
         
         Timestamp fechaInicio = rs.getTimestamp("fecha_inicio");
         if (fechaInicio != null) {
