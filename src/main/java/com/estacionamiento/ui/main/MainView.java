@@ -66,7 +66,8 @@ public class MainView extends BorderPane {
         HBox bar = new HBox();
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.setPadding(new Insets(14, 28, 14, 28));
-        bar.setStyle("-fx-background-color:white;-fx-border-color:transparent transparent " + UI.BORDER + " transparent;-fx-border-width:1;");
+        bar.setStyle("-fx-background-color:white;-fx-border-color:transparent transparent "
+                + UI.BORDER + " transparent;-fx-border-width:1;");
 
         titleLabel.setFont(Font.font("System", FontWeight.BLACK, 17));
         titleLabel.setStyle("-fx-text-fill:" + UI.TEXT + ";");
@@ -74,13 +75,11 @@ public class MainView extends BorderPane {
 
         clockLabel.setStyle("-fx-text-fill:" + UI.MUTED + ";-fx-font-size:13px;-fx-font-weight:bold;");
 
-        // Selector de estacionamiento
         Label lblEst = new Label("Estacionamiento:");
         lblEst.setStyle("-fx-text-fill:" + UI.MUTED + ";-fx-font-size:12px;");
         comboEstacionamiento.setPrefWidth(200);
         comboEstacionamiento.setStyle("-fx-font-size:12px;");
 
-        // Info del usuario en la topbar
         Session s = Session.getInstance();
         Label userInfo = new Label(s.getNombreCompleto() + " · " + s.getRolNombre());
         userInfo.setStyle("-fx-text-fill:" + UI.MUTED + ";-fx-font-size:12px;");
@@ -103,7 +102,8 @@ public class MainView extends BorderPane {
     }
 
     private void actualizarReloj() {
-        clockLabel.setText(LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss  dd/MM/yyyy")));
+        clockLabel.setText(LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("HH:mm:ss  dd/MM/yyyy")));
     }
 
     private void navegar(Sidebar.Modulo modulo) {
@@ -117,6 +117,9 @@ public class MainView extends BorderPane {
             case ESTACIONAMIENTOS -> new EstacionamientosModule();
             case CAJONES          -> new CajonesModule();
             case REGISTROS        -> new RegistrosModule();
+            // ── MÓDULO CAJA (nuevo) ──────────────────────────────────
+            case CAJA             -> new CajaModule();
+            // ────────────────────────────────────────────────────────
             case CLIENTES         -> new ClientesModule();
             case VEHICULOS        -> new VehiculosModule();
             case PENSIONES        -> new PensionesModule();
@@ -159,14 +162,12 @@ public class MainView extends BorderPane {
 
             Session s = Session.getInstance();
             if (s.isAdmin()) {
-                // Admin puede seleccionar
                 comboEstacionamiento.setDisable(false);
                 if (!estacionamientos.isEmpty()) {
                     comboEstacionamiento.setValue(estacionamientos.get(0));
                     s.setEstacionamientoActualId(estacionamientos.get(0).getId());
                 }
             } else {
-                // Encargado/Cajero usa el asignado
                 Integer estId = s.getEstacionamientoId();
                 if (estId != null) {
                     Estacionamiento asignado = estacionamientos.stream()

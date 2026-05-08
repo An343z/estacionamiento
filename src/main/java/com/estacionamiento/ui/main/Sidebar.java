@@ -30,6 +30,9 @@ public class Sidebar extends VBox {
         ESTACIONAMIENTOS ("🏢", "Estacionamientos",  "Principal"),
         CAJONES          ("🅿️",  "Cajones",           "Principal"),
         REGISTROS        ("🚗", "Entrada / Salida",   "Operaciones"),
+        // ── MÓDULO CAJA (nuevo) ──────────────────────────────
+        CAJA             ("💰", "Caja",               "Operaciones"),
+        // ────────────────────────────────────────────────────
         CLIENTES         ("👤", "Clientes",           "Gestión"),
         VEHICULOS        ("🚙", "Vehículos",          "Gestión"),
         PENSIONES        ("👥", "Pensiones",          "Servicios"),
@@ -55,16 +58,16 @@ public class Sidebar extends VBox {
 
     private void construirUI() {
         setStyle("-fx-background-color:" + UI.SIDEBAR + ";");
-        setPrefWidth(230); 
-        setMinWidth(230); 
+        setPrefWidth(230);
+        setMinWidth(230);
         setMaxWidth(230);
         setSpacing(0);
 
-        VBox logo = crearLogo();
-        VBox info = crearInfoUsuario();
+        VBox logo    = crearLogo();
+        VBox info    = crearInfoUsuario();
         ScrollPane scroll = crearScrollArea();
-        VBox cierre = crearPanelCierre();
-        
+        VBox cierre  = crearPanelCierre();
+
         getChildren().addAll(logo, info, scroll, cierre);
         VBox.setVgrow(scroll, Priority.ALWAYS);
     }
@@ -128,7 +131,7 @@ public class Sidebar extends VBox {
         contenido.setStyle("-fx-background-color:transparent;");
         contenido.setPadding(new Insets(0));
         contenido.getChildren().add(crearMenu());
-        
+
         ScrollPane scroll = new ScrollPane(contenido);
         scroll.setFitToWidth(true);
         scroll.setFitToHeight(false);
@@ -167,14 +170,10 @@ public class Sidebar extends VBox {
         return btn;
     }
 
-    private Region spacer() {
-        Region r = new Region(); VBox.setVgrow(r, Priority.ALWAYS); return r;
-    }
-
     private VBox crearPanelCierre() {
-        VBox outer = new VBox(); 
+        VBox outer = new VBox();
         outer.setPadding(new Insets(8, 12, 12, 12));
-        VBox inner = new VBox(8); 
+        VBox inner = new VBox(8);
         inner.setPadding(new Insets(12));
         inner.setStyle("-fx-background-color:rgba(255,255,255,0.05);-fx-background-radius:10;");
         Label lbl = new Label("Sesión activa");
@@ -188,12 +187,17 @@ public class Sidebar extends VBox {
         return outer;
     }
 
-    // ---- Permisos ----
+    // ---- Permisos por rol ----
     private boolean tienePermiso(Modulo m) {
         Session s = Session.getInstance();
         return switch (m) {
+            // Solo Admin Global
             case ESTACIONAMIENTOS, CONFIGURACION -> s.isAdmin();
+            // Admin o Encargado
             case REPORTES, PRECIOS, PROMOCIONES  -> s.isAdmin() || s.isEncargado();
+            // Caja: todos (cajero, encargado, admin)
+            case CAJA -> true;
+            // El resto también todos
             default -> true;
         };
     }
