@@ -1,10 +1,10 @@
 package com.estacionamiento.controladores;
 
+import java.util.List;
+
 import com.estacionamiento.dao.PensionDAO;
 import com.estacionamiento.modelos.Pension;
 import com.estacionamiento.utilidades.ConfigManager;
-import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * Controlador para gestión de Pensiones
@@ -25,6 +25,20 @@ public class PensionController {
 
     public Pension obtenerPensionPorId(int id) throws Exception {
         return pensionDAO.obtenerPorId(id);
+    }
+
+    public Pension obtenerPensionPorVehiculo(int vehiculoId) throws Exception {
+        return pensionDAO.obtenerPorVehiculo(vehiculoId);
+    }
+
+    public boolean tienePensionVencida(int vehiculoId) throws Exception {
+        Pension pension = obtenerPensionPorVehiculo(vehiculoId);
+        return pension != null && esPensionVencida(pension);
+    }
+
+    public boolean tienePensionActiva(int vehiculoId) throws Exception {
+        Pension pension = obtenerPensionPorVehiculo(vehiculoId);
+        return pension != null && !esPensionVencida(pension);
     }
 
     public List<Pension> obtenerTodasPensiones() throws Exception {

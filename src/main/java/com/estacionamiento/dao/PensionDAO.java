@@ -1,10 +1,15 @@
 package com.estacionamiento.dao;
 
-import com.estacionamiento.modelos.Pension;
-import java.sql.*;
-import java.time.LocalDateTime;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.estacionamiento.modelos.Pension;
 
 /**
  * DAO para la tabla de Pensiones
@@ -69,6 +74,21 @@ public class PensionDAO {
             System.err.println("Error al obtener pensiones: " + e.getMessage());
         }
         return pensiones;
+    }
+
+    public Pension obtenerPorVehiculo(int vehiculoId) {
+        String sql = "SELECT * FROM pensiones WHERE vehiculo_id = ? ORDER BY fecha_inicio DESC LIMIT 1";
+        try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
+            pstmt.setInt(1, vehiculoId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapearResultSet(rs);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al obtener pensión por vehículo: " + e.getMessage());
+        }
+        return null;
     }
 
     public List<Pension> obtenerActivas(int estacionamientoId) {

@@ -821,6 +821,7 @@ class RegistrosImpl extends VBox {
                 if(res){ ok.setText("✅  Entrada registrada correctamente."); ok.setVisible(true); ok.setManaged(true); cargar(); }
                 else UI.setError(err,"No se pudo registrar. ¿Cajón ya ocupado?");
             }catch(NumberFormatException ex){ UI.setError(err,"Los IDs deben ser números."); }
+            catch(Exception ex){ UI.setError(err, ex.getMessage()); }
         });
 
         btnSalida.setOnAction(e->{
@@ -833,6 +834,7 @@ class RegistrosImpl extends VBox {
                 if(reg!=null){ ok.setText("✅  Salida registrada. Monto: $"+String.format("%.2f",reg.getMonto())); ok.setVisible(true); ok.setManaged(true); cargar(); }
                 else UI.setError(err,"No hay entrada activa para ese vehículo.");
             }catch(NumberFormatException ex){ UI.setError(err,"El ID debe ser número."); }
+            catch(Exception ex){ UI.setError(err, ex.getMessage()); }
         });
 
         fila.getChildren().addAll(
@@ -1300,13 +1302,18 @@ class ReportesImpl extends ScrollPane {
     private final PromocionController promoCtrl = new PromocionController();
 
     ReportesImpl() {
+        System.out.println("[DEBUG] ReportesImpl constructor");
         setFitToWidth(true); setStyle("-fx-background:"+UI.BG+";-fx-background-color:"+UI.BG+";");
         VBox contenido=new VBox(20); contenido.setPadding(new Insets(24,28,24,28)); contenido.setStyle("-fx-background-color:"+UI.BG+";");
 
-        Label titulo=new Label("📈 Reportes y Estadísticas"); titulo.setFont(Font.font("System",FontWeight.BLACK,20));
-        Label sub=new Label("Estado actual del sistema · "+java.time.LocalDate.now()); sub.setStyle("-fx-text-fill:"+UI.MUTED+";-fx-font-size:12px;");
+        Label aviso = new Label("Reportes cargados correctamente");
+        aviso.setStyle("-fx-text-fill:"+UI.MUTED+";-fx-font-size:11px;");
 
-        contenido.getChildren().addAll(new VBox(4,titulo,sub), crearStatsEstacionamientos(), crearPensionesActivas(), crearPromocionesVigentes());
+        contenido.getChildren().addAll(
+            UI.encabezado("Reportes", "Estado y métricas del sistema"),
+            aviso,
+            crearStatsEstacionamientos(), crearPensionesActivas(), crearPromocionesVigentes()
+        );
         setContent(contenido);
     }
 
@@ -1358,7 +1365,7 @@ class ReportesImpl extends ScrollPane {
                 fila.getChildren().addAll(cli,sp,monto); card.getChildren().add(fila);
             }
         }catch(Exception e){card.getChildren().add(UI.alertaError("Error: "+e.getMessage()));}
-        card.getChildren().add(0,titulo); return card;
+        return card;
     }
 
     private VBox crearPromocionesVigentes(){

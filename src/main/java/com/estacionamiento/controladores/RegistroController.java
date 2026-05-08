@@ -1,18 +1,20 @@
 package com.estacionamiento.controladores;
 
-import com.estacionamiento.dao.RegistroEntradaSalidaDAO;
-import com.estacionamiento.dao.PrecioDAO;
-import com.estacionamiento.dao.CajonDAO;
-import com.estacionamiento.dao.EstacionamientoDAO;
-import com.estacionamiento.dao.VehiculoDAO;
-import com.estacionamiento.modelos.HistorialEvento;
-import com.estacionamiento.modelos.RegistroEntradaSalida;
-import com.estacionamiento.modelos.Precio;
-import com.estacionamiento.modelos.Promocion;
-import com.estacionamiento.modelos.Vehiculo;
-import com.estacionamiento.utilidades.DateUtils;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.estacionamiento.dao.CajonDAO;
+import com.estacionamiento.dao.EstacionamientoDAO;
+import com.estacionamiento.dao.PrecioDAO;
+import com.estacionamiento.dao.RegistroEntradaSalidaDAO;
+import com.estacionamiento.dao.VehiculoDAO;
+import com.estacionamiento.modelos.HistorialEvento;
+import com.estacionamiento.modelos.Pension;
+import com.estacionamiento.modelos.Precio;
+import com.estacionamiento.modelos.Promocion;
+import com.estacionamiento.modelos.RegistroEntradaSalida;
+import com.estacionamiento.modelos.Vehiculo;
+import com.estacionamiento.utilidades.DateUtils;
 
 /**
  * Controlador para gestionar registros de entrada y salida
@@ -25,6 +27,7 @@ public class RegistroController {
     private final VehiculoDAO vehiculoDAO;
     private final PromocionController promocionController;
     private final HistorialController historialController;
+    private final PensionController pensionController;
 
     public RegistroController() {
         this.registroDAO = new RegistroEntradaSalidaDAO();
@@ -34,6 +37,7 @@ public class RegistroController {
         this.vehiculoDAO = new VehiculoDAO();
         this.promocionController = new PromocionController();
         this.historialController = new HistorialController();
+        this.pensionController = new PensionController();
     }
 
     /**
@@ -43,7 +47,12 @@ public class RegistroController {
      * @param estacionamientoId ID del estacionamiento
      * @return true si se registró correctamente
      */
-    public boolean registrarEntrada(int vehiculoId, int cajonId, int estacionamientoId) {
+    public boolean registrarEntrada(int vehiculoId, int cajonId, int estacionamientoId) throws Exception {
+        Pension pension = pensionController.obtenerPensionPorVehiculo(vehiculoId);
+        if (pension != null && pensionController.esPensionVencida(pension)) {
+            throw new Exception("La pensión asignada al vehículo está vencida. Renueve la pensión antes de registrar una nueva entrada.");
+        }
+
         RegistroEntradaSalida registro = new RegistroEntradaSalida(vehiculoId, cajonId, LocalDateTime.now(), estacionamientoId);
         
         if (registroDAO.crear(registro)) {

@@ -1,18 +1,34 @@
 package com.estacionamiento.ui.main;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 import com.estacionamiento.controladores.NotificacionController;
 import com.estacionamiento.ui.Session;
 import com.estacionamiento.ui.UI;
-import com.estacionamiento.ui.modules.*;
+import com.estacionamiento.ui.modules.CajonesModule;
+import com.estacionamiento.ui.modules.ClientesModule;
+import com.estacionamiento.ui.modules.ConfiguracionModule;
+import com.estacionamiento.ui.modules.DashboardModule;
+import com.estacionamiento.ui.modules.EstacionamientosModule;
+import com.estacionamiento.ui.modules.NotificacionesModule;
+import com.estacionamiento.ui.modules.PensionesModule;
+import com.estacionamiento.ui.modules.PreciosModule;
+import com.estacionamiento.ui.modules.PromocionesModule;
+import com.estacionamiento.ui.modules.RegistrosModule;
+import com.estacionamiento.ui.modules.ReportesModule;
+import com.estacionamiento.ui.modules.VehiculosModule;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
-import javafx.scene.layout.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 /**
  * Ventana principal post-login.
@@ -90,6 +106,7 @@ public class MainView extends BorderPane {
     private void navegar(Sidebar.Modulo modulo) {
         if (modulo == null) { Session.getInstance().cerrar(); onLogout.run(); return; }
 
+        System.out.println("[DEBUG] navegando a modulo=" + modulo);
         titleLabel.setText(modulo.etiqueta);
 
         javafx.scene.Node vista = switch (modulo) {
