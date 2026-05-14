@@ -2,6 +2,35 @@ param(
     [switch]$Debug = $false
 )
 
+<<<<<<< HEAD
+=======
+# Detectar JAVA_HOME automáticamente
+$possibleJavaHomes = @(
+    'C:\Users\andre\.jdk\jdk-25.0.2',
+    'C:\Program Files\Eclipse Adoptium\jdk-25.0.3.9-hotspot',
+    'C:\Program Files\Java\jdk-21',
+    'C:\Program Files\Java\jdk-17'
+)
+
+$JAVA_HOME = $null
+foreach ($path in $possibleJavaHomes) {
+    if (Test-Path "$path\bin\java.exe") {
+        $JAVA_HOME = $path
+        break
+    }
+}
+
+if ($null -eq $JAVA_HOME) {
+    Write-Host "Error: No se encontro Java instalado" -ForegroundColor Red
+    Write-Host "Buscando en las rutas:" -ForegroundColor Yellow
+    $possibleJavaHomes | ForEach-Object { Write-Host "  - $_" -ForegroundColor Gray }
+    exit 1
+}
+
+$env:JAVA_HOME = $JAVA_HOME
+Write-Host "Java detectado: $JAVA_HOME" -ForegroundColor Green
+
+>>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $scriptDir
 
@@ -65,6 +94,7 @@ else {
 }
 Write-Host ""
 
+<<<<<<< HEAD
 # Compilar si no existe el JAR
 if (-not (Test-Path "target\ppark-1.0.0.jar")) {
     Write-Host "Compilando proyecto..." -ForegroundColor Yellow
@@ -85,7 +115,17 @@ if (-not (Test-Path "target\ppark-1.0.0.jar")) {
         Write-Host "Error en compilacion" -ForegroundColor Red
         exit 1
     }
+=======
+# Siempre recompilar
+Write-Host "Recompilando proyecto..." -ForegroundColor Yellow
+& "C:\apache-maven-3.9.15-bin\apache-maven-3.9.15\bin\mvn.cmd" clean package -q
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Error en compilacion" -ForegroundColor Red
+    exit 1
+>>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
 }
+Write-Host "Compilacion exitosa!" -ForegroundColor Green
+Write-Host ""
 
 Write-Host "Iniciando aplicacion..." -ForegroundColor Green
 Write-Host ""

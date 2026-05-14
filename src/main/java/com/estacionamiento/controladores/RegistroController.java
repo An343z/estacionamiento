@@ -7,24 +7,44 @@ import com.estacionamiento.dao.CajonDAO;
 import com.estacionamiento.dao.EstacionamientoDAO;
 import com.estacionamiento.dao.PrecioDAO;
 import com.estacionamiento.dao.RegistroEntradaSalidaDAO;
+<<<<<<< HEAD
 import com.estacionamiento.modelos.Precio;
 import com.estacionamiento.modelos.RegistroEntradaSalida;
+=======
+import com.estacionamiento.dao.VehiculoDAO;
+import com.estacionamiento.modelos.HistorialEvento;
+import com.estacionamiento.modelos.Pension;
+import com.estacionamiento.modelos.Precio;
+import com.estacionamiento.modelos.Promocion;
+import com.estacionamiento.modelos.RegistroEntradaSalida;
+import com.estacionamiento.modelos.Vehiculo;
+>>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
 import com.estacionamiento.utilidades.DateUtils;
 
 /**
  * Controlador para gestionar registros de entrada y salida
  */
 public class RegistroController {
-    private RegistroEntradaSalidaDAO registroDAO;
-    private PrecioDAO precioDAO;
-    private CajonDAO cajonDAO;
-    private EstacionamientoDAO estacionamientoDAO;
+
+    private final RegistroEntradaSalidaDAO registroDAO;
+    private final PrecioDAO precioDAO;
+    private final CajonDAO cajonDAO;
+    private final EstacionamientoDAO estacionamientoDAO;
+    private final VehiculoDAO vehiculoDAO;
+    private final PromocionController promocionController;
+    private final HistorialController historialController;
+    private final PensionController pensionController;
 
     public RegistroController() {
+
         this.registroDAO = new RegistroEntradaSalidaDAO();
         this.precioDAO = new PrecioDAO();
         this.cajonDAO = new CajonDAO();
         this.estacionamientoDAO = new EstacionamientoDAO();
+        this.vehiculoDAO = new VehiculoDAO();
+        this.promocionController = new PromocionController();
+        this.historialController = new HistorialController();
+        this.pensionController = new PensionController();
     }
 
     /**
@@ -34,10 +54,64 @@ public class RegistroController {
      * @param estacionamientoId ID del estacionamiento
      * @return true si se registró correctamente
      */
-    public boolean registrarEntrada(int vehiculoId, int cajonId, int estacionamientoId) {
-        RegistroEntradaSalida registro = new RegistroEntradaSalida(vehiculoId, cajonId, LocalDateTime.now(), estacionamientoId);
-        
+    public boolean registrarEntrada(
+            int vehiculoId,
+            int cajonId,
+            int estacionamientoId
+    ) throws Exception {
+
+        // ===== VALIDAR PENSION =====
+
+        Pension pension =
+                pensionController.obtenerPensionPorVehiculo(vehiculoId);
+
+        if (pension != null &&
+            pensionController.esPensionVencida(pension)) {
+
+            throw new Exception(
+                "La pensión asignada al vehículo está vencida. " +
+                "Renueve la pensión antes de registrar una nueva entrada."
+            );
+        }
+
+        // ===== VALIDAR ENTRADA ACTIVA =====
+
+        RegistroEntradaSalida activo =
+                registroDAO.obtenerActivoDelVehiculo(vehiculoId);
+
+        if (activo != null) {
+            throw new Exception(
+                "El vehículo ya tiene una entrada activa."
+            );
+        }
+
+        // ===== CREAR REGISTRO =====
+
+        RegistroEntradaSalida registro =
+                new RegistroEntradaSalida(
+                        vehiculoId,
+                        cajonId,
+                        LocalDateTime.now(),
+                        estacionamientoId
+                );
+
+        // ===== CORRECCION IMPORTANTE =====
+
+        registro.setEstado("Activo");
+        registro.setPromocionAplicada(null);
+
+        // ===== LOGS =====
+
+        System.out.println("=== REGISTRANDO ENTRADA ===");
+        System.out.println("Vehiculo ID: " + vehiculoId);
+        System.out.println("Cajon ID: " + cajonId);
+        System.out.println("Estacionamiento ID: " + estacionamientoId);
+        System.out.println("Estado: " + registro.getEstado());
+
+        // ===== INSERTAR =====
+
         if (registroDAO.crear(registro)) {
+<<<<<<< HEAD
             // Cambiar estado del cajón a ocupado
             cajonDAO.cambiarEstado(cajonId, "ocupado");
             
@@ -45,9 +119,59 @@ public class RegistroController {
             int disponibles = cajonDAO.contarDisponibles(estacionamientoId);
             estacionamientoDAO.actualizarCajonesDisponibles(estacionamientoId, disponibles);
             
+=======
+
+            // Cambiar estado del cajón
+            cajonDAO.cambiarEstado(cajonId, "Ocupado");
+
+            // Actualizar cajones disponibles
+            int disponibles =
+                    cajonDAO.contarDisponibles(estacionamientoId);
+
+            estacionamientoDAO.actualizarCajonesDisponibles(
+                    estacionamientoId,
+                    disponibles
+            );
+
+            try {
+
+                Vehiculo vehiculo =
+                        vehiculoDAO.obtenerPorId(vehiculoId);
+
+                int clienteId =
+                        vehiculo != null
+                                ? vehiculo.getClienteId()
+                                : 0;
+
+                historialController.registrarEvento(
+                        new HistorialEvento(
+                                clienteId,
+                                vehiculoId,
+                                null,
+                                cajonId,
+                                "Entrada",
+                                "Entrada registrada en cajón " + cajonId,
+                                0.0,
+                                LocalDateTime.now(),
+                                estacionamientoId
+                        )
+                );
+
+            } catch (Exception e) {
+
+                System.err.println(
+                    "No se pudo registrar evento de historial: "
+                    + e.getMessage()
+                );
+            }
+
+>>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
             return true;
         }
-        return false;
+
+        throw new Exception(
+            "No se pudo registrar la entrada."
+        );
     }
 
     /**
@@ -55,40 +179,136 @@ public class RegistroController {
      * @param vehiculoId ID del vehículo
      * @param tipoVehiculo tipo de vehículo (para consultar tarifa)
      * @param estacionamientoId ID del estacionamiento
-     * @return objeto RegistroEntradaSalida con el monto calculado, null si no hay registro activo
+     * @return objeto RegistroEntradaSalida con el monto calculado
      */
-    public RegistroEntradaSalida registrarSalida(int vehiculoId, String tipoVehiculo, int estacionamientoId) {
-        // Obtener el registro activo del vehículo
-        RegistroEntradaSalida registro = registroDAO.obtenerActivoDelVehiculo(vehiculoId);
-        
+    public RegistroEntradaSalida registrarSalida(
+            int vehiculoId,
+            String tipoVehiculo,
+            int estacionamientoId
+    ) {
+
+        // Obtener registro activo
+        RegistroEntradaSalida registro =
+                registroDAO.obtenerActivoDelVehiculo(vehiculoId);
+
         if (registro == null) {
             return null;
         }
 
-        // Obtener la tarifa
-        Precio precio = precioDAO.obtenerPorTipoVehiculo(tipoVehiculo, estacionamientoId);
+        // Obtener tarifa
+        Precio precio =
+                precioDAO.obtenerPorTipoVehiculo(
+                        tipoVehiculo,
+                        estacionamientoId
+                );
+
         if (precio == null) {
             return null;
         }
 
-        // Calcular monto
         LocalDateTime ahora = LocalDateTime.now();
-        long horas = DateUtils.calcularHoras(registro.getFechaEntrada(), ahora);
-        
+
+        long minutosTranscurridos =
+                DateUtils.calcularMinutos(
+                        registro.getFechaEntrada(),
+                        ahora
+                );
+
+        long horas =
+                DateUtils.calcularHoras(
+                        registro.getFechaEntrada(),
+                        ahora
+                );
+
         double monto;
-        if (horas < 1) {
-            monto = precio.getPrecioHora();
-        } else if (horas <= 4) {
-            monto = precio.getPrecioMedia();
+        String promocionAplicada = null;
+        String descripcionEvento;
+
+        if (minutosTranscurridos <= 5) {
+
+            monto = 0.0;
+
+            descripcionEvento =
+                    "Salida dentro de la tolerancia de 5 minutos";
+
         } else {
-            long dias = DateUtils.calcularDias(registro.getFechaEntrada(), ahora);
-            monto = dias * precio.getPrecioDia();
-            long horasRestantes = horas - (dias * 24);
-            if (horasRestantes > 0) {
-                monto += precio.getPrecioHora() * horasRestantes;
+
+            if (horas < 1) {
+
+                monto = precio.getPrecioHora();
+
+            } else if (horas <= 4) {
+
+                monto = precio.getPrecioMedia();
+
+            } else {
+
+                long dias =
+                        DateUtils.calcularDias(
+                                registro.getFechaEntrada(),
+                                ahora
+                        );
+
+                monto = dias * precio.getPrecioDia();
+
+                long horasRestantes =
+                        horas - (dias * 24);
+
+                if (horasRestantes > 0) {
+
+                    monto +=
+                            precio.getPrecioHora()
+                            * horasRestantes;
+                }
             }
+
+            try {
+
+                Promocion mejor =
+                        promocionController.obtenerMejorPromocion(
+                                estacionamientoId,
+                                tipoVehiculo,
+                                monto,
+                                horas
+                        );
+
+                if (mejor != null) {
+
+                    double montoConPromocion =
+                            promocionController.aplicarPromocion(
+                                    mejor,
+                                    monto,
+                                    horas
+                            );
+
+                    if (montoConPromocion < monto) {
+
+                        promocionAplicada =
+                                mejor.getNombre();
+
+                        monto = montoConPromocion;
+                    }
+                }
+
+            } catch (Exception e) {
+
+                System.err.println(
+                    "No se pudo aplicar promoción: "
+                    + e.getMessage()
+                );
+            }
+
+            descripcionEvento =
+                    "Salida registrada"
+                    + (
+                        promocionAplicada != null
+                        ? " con promoción: "
+                          + promocionAplicada
+                        : ""
+                    );
         }
 
+<<<<<<< HEAD
         // Finalizar el registro
         if (registroDAO.finalizarRegistro(registro.getId(), ahora, monto)) {
             // Cambiar estado del cajón a libre
@@ -98,10 +318,67 @@ public class RegistroController {
             int disponibles = cajonDAO.contarDisponibles(estacionamientoId);
             estacionamientoDAO.actualizarCajonesDisponibles(estacionamientoId, disponibles);
             
+=======
+        if (registroDAO.finalizarRegistro(
+                registro.getId(),
+                ahora,
+                monto,
+                promocionAplicada
+        )) {
+
+            // Liberar cajón
+            cajonDAO.cambiarEstado(
+                    registro.getCajonId(),
+                    "Disponible"
+            );
+
+            // Actualizar disponibles
+            int disponibles =
+                    cajonDAO.contarDisponibles(estacionamientoId);
+
+            estacionamientoDAO.actualizarCajonesDisponibles(
+                    estacionamientoId,
+                    disponibles
+            );
+
+>>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
             registro.setFechaSalida(ahora);
             registro.setMonto(monto);
+            registro.setPromocionAplicada(promocionAplicada);
             registro.setEstado("Finalizado");
-            
+
+            try {
+
+                Vehiculo vehiculo =
+                        vehiculoDAO.obtenerPorId(vehiculoId);
+
+                int clienteId =
+                        vehiculo != null
+                                ? vehiculo.getClienteId()
+                                : 0;
+
+                historialController.registrarEvento(
+                        new HistorialEvento(
+                                clienteId,
+                                vehiculoId,
+                                registro.getId(),
+                                registro.getCajonId(),
+                                "Salida",
+                                descripcionEvento,
+                                monto,
+                                ahora,
+                                estacionamientoId
+                        )
+                );
+
+            } catch (Exception e) {
+
+                System.err.println(
+                    "No se pudo registrar evento de historial: "
+                    + e.getMessage()
+                );
+            }
+
             return registro;
         }
 
@@ -112,18 +389,32 @@ public class RegistroController {
         return registroDAO.obtenerPorId(id);
     }
 
-    public RegistroEntradaSalida obtenerRegistroActivoDelVehiculo(int vehiculoId) {
+    public RegistroEntradaSalida obtenerRegistroActivoDelVehiculo(
+            int vehiculoId
+    ) {
         return registroDAO.obtenerActivoDelVehiculo(vehiculoId);
     }
 
-    public List<RegistroEntradaSalida> obtenerRegistrosPorEstacionamiento(int estacionamientoId) {
-        return registroDAO.obtenerPorEstacionamiento(estacionamientoId);
+    public List<RegistroEntradaSalida>
+    obtenerRegistrosPorEstacionamiento(
+            int estacionamientoId
+    ) {
+        return registroDAO.obtenerPorEstacionamiento(
+                estacionamientoId
+        );
     }
 
-    public double obtenerIngresoDelDia(int estacionamientoId, LocalDateTime fecha) {
-        return registroDAO.obtenerIngresoDelDia(estacionamientoId, fecha);
+    public double obtenerIngresoDelDia(
+            int estacionamientoId,
+            LocalDateTime fecha
+    ) {
+        return registroDAO.obtenerIngresoDelDia(
+                estacionamientoId,
+                fecha
+        );
     }
 
+<<<<<<< HEAD
     public double obtenerIngresoDeLosUltimosDias(int estacionamientoId, int dias) {
         double total = 0;
         LocalDateTime now = LocalDateTime.now();
@@ -134,3 +425,82 @@ public class RegistroController {
         return total;
     }
 }
+=======
+    public boolean registrarCambioCajon(
+            int clienteId,
+            int vehiculoId,
+            int registroId,
+            int cajonAnterior,
+            int cajonNuevo,
+            int estacionamientoId
+    ) {
+
+        String descripcion =
+                String.format(
+                        "Cambio de cajón de %d a %d",
+                        cajonAnterior,
+                        cajonNuevo
+                );
+
+        try {
+
+            return historialController.registrarEvento(
+                    new HistorialEvento(
+                            clienteId,
+                            vehiculoId,
+                            registroId,
+                            cajonNuevo,
+                            "Cambio de cajón",
+                            descripcion,
+                            0.0,
+                            LocalDateTime.now(),
+                            estacionamientoId
+                    )
+            );
+
+        } catch (Exception e) {
+
+            System.err.println(
+                "No se pudo registrar el cambio de cajón: "
+                + e.getMessage()
+            );
+
+            return false;
+        }
+    }
+
+    public boolean registrarIncidente(
+            int clienteId,
+            int vehiculoId,
+            String descripcion,
+            int estacionamientoId
+    ) {
+
+        try {
+
+            return historialController.registrarEvento(
+                    new HistorialEvento(
+                            clienteId,
+                            vehiculoId,
+                            null,
+                            null,
+                            "Incidente",
+                            descripcion,
+                            0.0,
+                            LocalDateTime.now(),
+                            estacionamientoId
+                    )
+            );
+
+        } catch (Exception e) {
+
+            System.err.println(
+                "No se pudo registrar el incidente: "
+                + e.getMessage()
+            );
+
+            return false;
+        }
+    }
+}
+>>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca

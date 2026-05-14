@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 com\estacionamiento\ui\modules\CajaModule$2.class
 com\estacionamiento\ui\modules\CajaModule.class
 com\estacionamiento\ui\main\MainView$2.class
@@ -6,6 +7,34 @@ com\estacionamiento\ui\modules\UsuariosImpl$4.class
 com\estacionamiento\ui\modules\ConveniosImpl$3.class
 com\estacionamiento\ui\modules\UsuariosImpl$1.class
 com\estacionamiento\ui\modules\CajaModule$5.class
+=======
+com\estacionamiento\utilidades\EmailTest.class
+com\estacionamiento\controladores\PrecioController.class
+com\estacionamiento\dao\PromocionDAO.class
+com\estacionamiento\controladores\PensionController.class
+com\estacionamiento\ui\modules\VehiculosModule.class
+com\estacionamiento\dao\PensionDAO.class
+com\estacionamiento\modelos\Restaurante.class
+com\estacionamiento\utilidades\GraficoPastel.class
+com\estacionamiento\modelos\Promocion.class
+com\estacionamiento\ui\modules\ReportesModule.class
+com\estacionamiento\utilidades\EmailSender.class
+com\estacionamiento\ui\main\Sidebar.class
+com\estacionamiento\MainTest.class
+com\estacionamiento\ui\modules\NotificacionesImpl.class
+com\estacionamiento\ui\modules\VehiculosImpl$1.class
+com\estacionamiento\ui\modules\ClientesModule.class
+com\estacionamiento\ui\modules\CorreoRecordatorioView.class
+com\estacionamiento\modelos\HistorialEvento.class
+com\estacionamiento\controladores\HistorialController.class
+com\estacionamiento\modelos\ConvenioRestaurante.class
+com\estacionamiento\ui\modules\PensionesImpl$3.class
+com\estacionamiento\ui\modules\EstacionamientosImpl$2.class
+com\estacionamiento\utilidades\CalculadoraEstadisticas.class
+com\estacionamiento\ui\modules\DashboardModule.class
+com\estacionamiento\modelos\Precio.class
+com\estacionamiento\ui\modules\ClientesImpl$1.class
+>>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
 com\estacionamiento\utilidades\DateUtils.class
 com\estacionamiento\ui\modules\ConveniosImpl$2.class
 com\estacionamiento\ui\modules\UsuariosImpl$5.class
@@ -17,6 +46,7 @@ com\estacionamiento\utilidades\ConfigManager.class
 com\estacionamiento\utilidades\GraficoLineas.class
 com\estacionamiento\utilidades\TablaPersonalizada$2.class
 com\estacionamiento\utilidades\Logger.class
+<<<<<<< HEAD
 com\estacionamiento\controladores\CajaController.class
 com\estacionamiento\ui\modules\ConveniosModule.class
 com\estacionamiento\ui\modules\CajaImpl.class
@@ -24,6 +54,32 @@ com\estacionamiento\modelos\CorteCaja.class
 com\estacionamiento\modelos\Pago$MetodoPago.class
 com\estacionamiento\ui\modules\CajaModule$6.class
 com\estacionamiento\utilidades\GeneradorExcel.class
+=======
+com\estacionamiento\ui\modules\PensionesModule.class
+com\estacionamiento\ui\modules\PromocionesModule.class
+com\estacionamiento\ui\login\LoginView.class
+com\estacionamiento\ui\modules\EstacionamientosImpl.class
+com\estacionamiento\Main.class
+com\estacionamiento\dao\VehiculoDAO.class
+com\estacionamiento\modelos\FacturaRestaurante.class
+com\estacionamiento\utilidades\EmailSender$1.class
+com\estacionamiento\ui\modules\EstacionamientosImpl$1.class
+com\estacionamiento\utilidades\RecordatorioPensionTask.class
+com\estacionamiento\ui\main\Sidebar$Modulo.class
+com\estacionamiento\controladores\UsuarioController.class
+com\estacionamiento\dao\RegistroEntradaSalidaDAO.class
+com\estacionamiento\ui\modules\ClientesImpl.class
+com\estacionamiento\controladores\PromocionController.class
+com\estacionamiento\ui\modules\PreciosImpl$1.class
+com\estacionamiento\modelos\Cliente.class
+com\estacionamiento\dao\ClienteDAO.class
+com\estacionamiento\utilidades\GeneradorExcel.class
+com\estacionamiento\ui\modules\CajonesImpl.class
+com\estacionamiento\ui\modules\ClientesImpl$2.class
+com\estacionamiento\dao\HistorialEventoDAO.class
+com\estacionamiento\ui\main\MainView$1.class
+com\estacionamiento\controladores\AdminController.class
+>>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
 com\estacionamiento\utilidades\TablaPersonalizada$1.class
 com\estacionamiento\utilidades\TablaPersonalizada.class
 com\estacionamiento\ui\modules\UsuariosImpl.class

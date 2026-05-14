@@ -125,6 +125,7 @@ CREATE TABLE registros_entrada_salida (
     fecha_entrada TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_salida TIMESTAMP,
     monto DECIMAL(10,2),
+    promocion_aplicada VARCHAR(200),
     estado VARCHAR(20) NOT NULL DEFAULT 'Activo',
     estacionamiento_id INT NOT NULL,
     FOREIGN KEY (vehiculo_id) REFERENCES vehiculos(id),
@@ -166,6 +167,8 @@ CREATE TABLE promociones (
     nombre VARCHAR(100) NOT NULL,
     descripcion TEXT,
     descuento_porcentaje DECIMAL(5,2),
+    descuento_fijo DECIMAL(10,2) DEFAULT 0,
+    horas_gratis INT DEFAULT 0,
     fecha_inicio TIMESTAMP,
     fecha_fin TIMESTAMP,
     tipo_vehiculo VARCHAR(20),
@@ -174,6 +177,31 @@ CREATE TABLE promociones (
     FOREIGN KEY (estacionamiento_id) REFERENCES estacionamientos(id),
     INDEX idx_activa (activa),
     INDEX idx_estacionamiento (estacionamiento_id)
+);
+
+-- ========================================
+-- TABLA: historial de eventos
+-- ========================================
+CREATE TABLE historial_eventos (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    cliente_id INT NOT NULL,
+    vehiculo_id INT NOT NULL,
+    registro_id INT,
+    cajon_id INT,
+    tipo VARCHAR(50) NOT NULL,
+    descripcion TEXT,
+    monto DECIMAL(10,2) DEFAULT 0,
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    estacionamiento_id INT NOT NULL,
+    FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+    FOREIGN KEY (vehiculo_id) REFERENCES vehiculos(id),
+    FOREIGN KEY (registro_id) REFERENCES registros_entrada_salida(id),
+    FOREIGN KEY (cajon_id) REFERENCES cajones(id),
+    FOREIGN KEY (estacionamiento_id) REFERENCES estacionamientos(id),
+    INDEX idx_cliente (cliente_id),
+    INDEX idx_vehiculo (vehiculo_id),
+    INDEX idx_registro (registro_id),
+    INDEX idx_fecha (fecha)
 );
 
 -- ========================================

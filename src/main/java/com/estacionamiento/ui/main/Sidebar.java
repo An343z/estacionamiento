@@ -38,6 +38,7 @@ public class Sidebar extends VBox {
         PENSIONES        ("👥", "Pensiones",          "Servicios"),
         PRECIOS          ("💵", "Precios",            "Servicios"),
         PROMOCIONES      ("🎫", "Promociones",        "Servicios"),
+        CORREO_RECORDATORIO ("✉️", "Recordatorio Email", "Servicios"),
         NOTIFICACIONES   ("🔔", "Notificaciones",     "Sistema"),
         REPORTES         ("📈", "Reportes",           "Sistema"),
         CONFIGURACION    ("⚙️",  "Configuración",     "Sistema");
@@ -63,6 +64,7 @@ public class Sidebar extends VBox {
         setMaxWidth(230);
         setSpacing(0);
 
+<<<<<<< HEAD
         VBox logo    = crearLogo();
         VBox info    = crearInfoUsuario();
         ScrollPane scroll = crearScrollArea();
@@ -70,6 +72,9 @@ public class Sidebar extends VBox {
 
         getChildren().addAll(logo, info, scroll, cierre);
         VBox.setVgrow(scroll, Priority.ALWAYS);
+=======
+        getChildren().addAll(crearLogo(), crearInfoUsuario(), crearMenuScroll(), spacer(), crearPanelCierre());
+>>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
     }
 
     private VBox crearLogo() {
@@ -101,7 +106,7 @@ public class Sidebar extends VBox {
         return outer;
     }
 
-    private VBox crearMenu() {
+    private ScrollPane crearMenuScroll() {
         VBox menu = new VBox(0);
         menu.setPadding(new Insets(8, 0, 8, 0));
         String seccionActual = "";
@@ -121,7 +126,14 @@ public class Sidebar extends VBox {
             botones.add(btn);
             menu.getChildren().add(btn);
         }
-        return menu;
+
+        ScrollPane scroll = new ScrollPane(menu);
+        scroll.setFitToWidth(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+        VBox.setVgrow(scroll, Priority.ALWAYS);
+        return scroll;
     }
 
     private ScrollPane crearScrollArea() {
@@ -145,8 +157,8 @@ public class Sidebar extends VBox {
     private Button crearBoton(Modulo m) {
         HBox cont = new HBox(10);
         cont.setAlignment(Pos.CENTER_LEFT);
-        Label ico = new Label(m.icono); ico.setFont(Font.font(16)); ico.setMinWidth(20);
-        Label lbl = new Label(m.etiqueta);
+        Label ico = new Label(m.icono); ico.setFont(Font.font(16)); ico.setMinWidth(20); ico.setStyle("-fx-text-fill:white;");
+        Label lbl = new Label(m.etiqueta); lbl.setStyle("-fx-text-fill:white;-fx-font-size:13px;");
 
         if (m == Modulo.NOTIFICACIONES) {
             badgeNotif = new Label("!");
@@ -213,7 +225,7 @@ public class Sidebar extends VBox {
     }
 
     private String activoStyle()  { return "-fx-background-color:rgba(59,130,246,0.15);-fx-text-fill:white;-fx-border-color:transparent transparent transparent #3b82f6;-fx-border-width:0 0 0 3;-fx-cursor:hand;-fx-alignment:CENTER-LEFT;"; }
-    private String normalStyle()  { return "-fx-background-color:transparent;-fx-text-fill:rgba(255,255,255,0.6);-fx-border-color:transparent;-fx-cursor:hand;-fx-alignment:CENTER-LEFT;"; }
+    private String normalStyle()  { return "-fx-background-color:transparent;-fx-text-fill:white;-fx-border-color:transparent;-fx-cursor:hand;-fx-alignment:CENTER-LEFT;"; }
     private String hoverStyle()   { return "-fx-background-color:rgba(255,255,255,0.06);-fx-text-fill:white;-fx-border-color:transparent;-fx-cursor:hand;-fx-alignment:CENTER-LEFT;"; }
 
     public void setBadgeNotif(int cantidad) {

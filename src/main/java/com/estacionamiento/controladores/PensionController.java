@@ -1,8 +1,10 @@
 package com.estacionamiento.controladores;
 
+import java.util.List;
+
 import com.estacionamiento.dao.PensionDAO;
 import com.estacionamiento.modelos.Pension;
-import java.util.List;
+import com.estacionamiento.utilidades.ConfigManager;
 
 /**
  * Controlador para gestión de Pensiones
@@ -23,6 +25,20 @@ public class PensionController {
 
     public Pension obtenerPensionPorId(int id) throws Exception {
         return pensionDAO.obtenerPorId(id);
+    }
+
+    public Pension obtenerPensionPorVehiculo(int vehiculoId) throws Exception {
+        return pensionDAO.obtenerPorVehiculo(vehiculoId);
+    }
+
+    public boolean tienePensionVencida(int vehiculoId) throws Exception {
+        Pension pension = obtenerPensionPorVehiculo(vehiculoId);
+        return pension != null && esPensionVencida(pension);
+    }
+
+    public boolean tienePensionActiva(int vehiculoId) throws Exception {
+        Pension pension = obtenerPensionPorVehiculo(vehiculoId);
+        return pension != null && !esPensionVencida(pension);
     }
 
     public List<Pension> obtenerTodasPensiones() throws Exception {
@@ -62,5 +78,17 @@ public class PensionController {
         return pensiones.stream()
             .mapToDouble(Pension::getMonto)
             .sum();
+    }
+
+    public String calcularEstado(Pension pension) {
+        int diasAntes = ConfigManager.getInstancia().obtenerInt("recordatorio.pension.dias");
+        if (diasAntes <= 0) {
+            diasAntes = 3;
+        }
+        return pension.getEstadoCalculado(diasAntes);
+    }
+
+    public boolean esPensionVencida(Pension pension) {
+        return "Vencida".equals(calcularEstado(pension));
     }
 }

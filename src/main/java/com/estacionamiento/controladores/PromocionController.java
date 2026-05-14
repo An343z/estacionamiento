@@ -9,7 +9,7 @@ import java.util.List;
  * Controlador para gestión de Promociones
  */
 public class PromocionController {
-    private PromocionDAO promocionDAO;
+    private final PromocionDAO promocionDAO;
 
     public PromocionController() {
         this.promocionDAO = new PromocionDAO();
@@ -56,9 +56,45 @@ public class PromocionController {
         LocalDateTime ahora = LocalDateTime.now();
         return promociones.stream()
             .filter(p -> p.isActiva() &&
-                        (p.getFechaInicio() == null || p.getFechaInicio().isBefore(ahora) || p.getFechaInicio().isEqual(ahora)) &&
+                        (p.getFechaInicio() == null || !p.getFechaInicio().isAfter(ahora)) &&
                         (p.getFechaFin() == null || p.getFechaFin().isAfter(ahora)))
             .toList();
+    }
+
+    public Promocion obtenerMejorPromocion(int estacionamientoId, String tipoVehiculo, double montoBase, long horasConsumidas) throws Exception {
+        return obtenerPromocionesVigentes(estacionamientoId).stream()
+            .filter(p -> "Todos".equalsIgnoreCase(p.getTipoVehiculo()) || p.getTipoVehiculo().equalsIgnoreCase(tipoVehiculo))
+            .max((a, b) -> Double.compare(calcularBeneficio(b, montoBase, horasConsumidas), calcularBeneficio(a, montoBase, horasConsumidas)))
+            .orElse(null);
+    }
+
+    public double aplicarPromocion(Promocion promocion, double montoBase, long horasConsumidas) {
+        if (promocion == null) {
+            return montoBase;
+        }
+        if (promocion.getHorasGratis() > 0 && horasConsumidas <= promocion.getHorasGratis()) {
+            return 0.0;
+        }
+        double montoConDescuento = montoBase;
+        if (promocion.getDescuentoPorcentaje() > 0) {
+            montoConDescuento = montoConDescuento * (1.0 - promocion.getDescuentoPorcentaje() / 100.0);
+        }
+        if (promocion.getDescuentoFijo() > 0) {
+            montoConDescuento -= promocion.getDescuentoFijo();
+        }
+        return Math.max(montoConDescuento, 0.0);
+    }
+
+    public double calcularBeneficio(Promocion promocion, double montoBase, long horasConsumidas) {
+        if (promocion == null) {
+            return 0.0;
+        }
+        if (promocion.getHorasGratis() > 0 && horasConsumidas <= promocion.getHorasGratis()) {
+            return montoBase;
+        }
+        double montoSinPromocion = montoBase;
+        double montoConPromocion = aplicarPromocion(promocion, montoBase, horasConsumidas);
+        return montoSinPromocion - montoConPromocion;
     }
 
     // Validaciones
@@ -70,9 +106,18 @@ public class PromocionController {
         if (promocion.getDescuentoPorcentaje() < 0 || promocion.getDescuentoPorcentaje() > 100) {
             return "El porcentaje de descuento debe estar entre 0 y 100";
         }
+        if (promocion.getDescuentoFijo() < 0) {
+            return "El descuento fijo no puede ser negativo";
+        }
+        if (promocion.getHorasGratis() < 0) {
+            return "Las horas gratis no pueden ser negativas";
+        }
         if (promocion.getFechaInicio() != null && promocion.getFechaFin() != null &&
             promocion.getFechaInicio().isAfter(promocion.getFechaFin())) {
             return "La fecha de inicio no puede ser posterior a la fecha de fin";
+        }
+        if (promocion.getDescuentoPorcentaje() == 0 && promocion.getDescuentoFijo() == 0 && promocion.getHorasGratis() == 0) {
+            return "Debe definir al menos un tipo de beneficio para la promoción";
         }
         return null; // Válido
     }

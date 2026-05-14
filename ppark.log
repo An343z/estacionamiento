@@ -25,6 +25,7 @@ The last packet sent successfully to the server was 0 milliseconds ago. The driv
 [2026-05-06 10:38:14] [INFO] Conexion a la base de datos establecida correctamente
 [2026-05-06 10:55:07] [INFO] Conexion a la base de datos establecida correctamente
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> ead7e2cf85ebefc3182844fd74116d907f9aba51
 [2026-05-06 20:15:52] [INFO] Conexion a la base de datos establecida correctamente
 [2026-05-06 20:30:24] [INFO] Conexion a la base de datos establecida correctamente
@@ -57,3 +58,72 @@ The last packet sent successfully to the server was 0 milliseconds ago. The driv
 [2026-05-13 10:40:08] [ERROR] No se pudo conectar a la base de datos - Communications link failure
 
 The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+=======
+[2026-05-06 10:08:24] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-06 10:45:51] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-06 11:16:59] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-06 11:34:05] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-06 11:43:34] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-06 11:48:20] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-06 11:50:26] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-06 11:52:30] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-06 11:57:11] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 09:12:26] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 10:46:33] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 11:00:32] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 17:57:09] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 19:43:34] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 19:51:42] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 19:54:03] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 19:56:27] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 20:00:01] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 20:17:36] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 20:54:35] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 20:57:10] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 21:02:35] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 22:12:23] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 22:24:21] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 22:28:03] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 22:32:28] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 22:35:02] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 22:37:23] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-07 22:39:38] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 00:41:14] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 00:49:30] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 00:50:28] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 00:53:31] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 00:55:53] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 00:58:37] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 01:11:41] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 01:50:05] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 09:29:55] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 09:38:11] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 09:40:15] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 09:44:06] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 10:42:36] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 10:43:48] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 10:52:11] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 10:54:27] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 11:01:30] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 11:07:02] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 11:13:26] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 11:27:28] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-08 12:09:39] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-13 10:43:06] [ERROR] No se pudo conectar a la base de datos - Communications link failure
+
+The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+[2026-05-13 10:43:28] [ERROR] No se pudo conectar a la base de datos - Communications link failure
+
+The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+[2026-05-13 10:57:19] [ERROR] No se pudo conectar a la base de datos - Communications link failure
+
+The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+[2026-05-13 10:57:40] [ERROR] No se pudo conectar a la base de datos - Communications link failure
+
+The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+[2026-05-13 11:00:01] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-13 11:07:24] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-13 11:36:15] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-13 12:11:37] [INFO] Conexion a la base de datos establecida correctamente
+[2026-05-13 12:12:17] [INFO] Conexion a la base de datos establecida correctamente
+>>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca

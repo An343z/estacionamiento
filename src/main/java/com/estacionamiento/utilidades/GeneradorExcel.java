@@ -1,85 +1,460 @@
 package com.estacionamiento.utilidades;
 
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import java.io.File;
+<<<<<<< HEAD
+=======
+import java.io.FileOutputStream;
+import java.sql.*;
+>>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
 
-/**
- * Utilidad para generar reportes en Excel
- * Requiere: Apache POI 5.2.3
- */
 public class GeneradorExcel {
+
     private String rutaSalida;
+    private Connection connection;
 
-    public GeneradorExcel(String rutaSalida) {
+    public GeneradorExcel(
+            String rutaSalida,
+            Connection connection
+    ) {
+
         this.rutaSalida = rutaSalida;
+        this.connection = connection;
     }
 
-    /**
-     * Genera reporte de ocupación en Excel
-     */
-    public boolean generarReporteOcupacion(String estacionamiento, int totalCajones,
-                                           int disponibles, int ocupados, int mantenimiento) {
+    public boolean generarBaseCompletaExcel() {
+
         try {
-            String nombre = "Reporte_Ocupacion_" + LocalDate.now() + ".xlsx";
-            String rutaCompleta = rutaSalida + File.separator + nombre;
 
-            // Aquí se agregaría la lógica con Apache POI
-            // Por ahora creamos un archivo vacío como placeholder
-            File archivo = new File(rutaCompleta);
+            String nombre =
+                    "Base_Completa_"
+                    + LocalDate.now()
+                    + ".xlsx";
+
+            String rutaCompleta =
+                    rutaSalida
+                    + File.separator
+                    + nombre;
+
+            File archivo =
+                    new File(rutaCompleta);
+
             archivo.getParentFile().mkdirs();
-            archivo.createNewFile();
 
-            System.out.println("Excel generado: " + rutaCompleta);
+            XSSFWorkbook workbook =
+                    new XSSFWorkbook();
+
+            Statement tablasStmt =
+                    connection.createStatement();
+
+            ResultSet tablas =
+                    tablasStmt.executeQuery(
+                            "SHOW TABLES"
+                    );
+
+            System.out.println("TABLAS ENCONTRADAS:");
+
+            while(tablas.next()) {
+
+                String tabla =
+                        tablas.getString(1);
+
+                System.out.println(tabla);
+
+                try {
+
+                    System.out.println(
+                            "Exportando tabla: "
+                            + tabla
+                    );
+
+                    Sheet sheet =
+                            workbook.createSheet(tabla);
+
+                    Statement st =
+                            connection.createStatement();
+
+                    ResultSet rs =
+                            st.executeQuery(
+                                    "SELECT * FROM `"
+                                    + tabla
+                                    + "`"
+                            );
+
+                    ResultSetMetaData rsmd =
+                            rs.getMetaData();
+
+                    int columnas =
+                            rsmd.getColumnCount();
+
+                    CellStyle headerStyle =
+                            workbook.createCellStyle();
+
+                    Font font =
+                            workbook.createFont();
+
+                    font.setBold(true);
+
+                    headerStyle.setFont(font);
+
+                    Row header =
+                            sheet.createRow(0);
+
+                    for(int i = 1;
+                        i <= columnas;
+                        i++) {
+
+                        Cell cell =
+                                header.createCell(i - 1);
+
+                        cell.setCellValue(
+                                rsmd.getColumnName(i)
+                        );
+
+                        cell.setCellStyle(
+                                headerStyle
+                        );
+                    }
+
+                    int fila = 1;
+
+                    while(rs.next()) {
+
+                        Row row =
+                                sheet.createRow(fila++);
+
+                        for(int i = 1;
+                            i <= columnas;
+                            i++) {
+
+                            Object valor =
+                                    rs.getObject(i);
+
+                            row.createCell(i - 1)
+                                    .setCellValue(
+                                            valor != null
+                                            ? valor.toString()
+                                            : ""
+                                    );
+                        }
+                    }
+
+                    for(int i = 0;
+                        i < columnas;
+                        i++) {
+
+                        sheet.autoSizeColumn(i);
+                    }
+
+                    rs.close();
+                    st.close();
+
+                } catch(Exception ex) {
+
+                    System.out.println(
+                            "Error exportando tabla: "
+                            + tabla
+                    );
+
+                    ex.printStackTrace();
+                }
+            }
+
+            tablas.close();
+            tablasStmt.close();
+
+            try(FileOutputStream fos =
+                        new FileOutputStream(
+                                rutaCompleta
+                        )) {
+
+                workbook.write(fos);
+            }
+
+            workbook.close();
+
+            System.out.println(
+                    "Excel completo generado"
+            );
+
             return true;
-        } catch (Exception ex) {
-            System.err.println("Error generando Excel: " + ex.getMessage());
+
+        } catch(Exception ex) {
+
+            ex.printStackTrace();
             return false;
         }
     }
 
-    /**
-     * Genera reporte de ingresos en Excel
-     */
-    public boolean generarReporteIngresos(LocalDate fechaInicio, LocalDate fechaFin,
-                                          double totalIngresos, int totalRegistros) {
+    public boolean generarBaseDiaExcel(
+            LocalDate fecha
+    ) {
+
+        return generarBaseFiltradaExcel(
+                "DIA_" + fecha,
+                "DATE(%s)='" + fecha + "'"
+        );
+    }
+
+    public boolean generarBaseMesExcel(
+            int anio,
+            int mes
+    ) {
+
+        return generarBaseFiltradaExcel(
+                "MES_" + anio + "_" + mes,
+                "MONTH(%s)=" + mes
+                + " AND YEAR(%s)=" + anio
+        );
+    }
+
+    public boolean generarBaseAnioExcel(
+            int anio
+    ) {
+
+        return generarBaseFiltradaExcel(
+                "ANIO_" + anio,
+                "YEAR(%s)=" + anio
+        );
+    }
+
+    private boolean generarBaseFiltradaExcel(
+            String sufijo,
+            String filtro
+    ) {
+
         try {
-            String nombre = "Reporte_Ingresos_" + fechaInicio + "_a_" + fechaFin + ".xlsx";
-            String rutaCompleta = rutaSalida + File.separator + nombre;
 
-            File archivo = new File(rutaCompleta);
+            String nombre =
+                    "Base_"
+                    + sufijo
+                    + ".xlsx";
+
+            String rutaCompleta =
+                    rutaSalida
+                    + File.separator
+                    + nombre;
+
+            File archivo =
+                    new File(rutaCompleta);
+
             archivo.getParentFile().mkdirs();
-            archivo.createNewFile();
 
-            System.out.println("Excel generado: " + rutaCompleta);
+            XSSFWorkbook workbook =
+                    new XSSFWorkbook();
+
+            Statement tablasStmt =
+                    connection.createStatement();
+
+            ResultSet tablas =
+                    tablasStmt.executeQuery(
+                            "SHOW TABLES"
+                    );
+
+            while(tablas.next()) {
+
+                String tabla =
+                        tablas.getString(1);
+
+                try {
+
+                    System.out.println(
+                            "Exportando tabla: "
+                            + tabla
+                    );
+
+                    Sheet sheet =
+                            workbook.createSheet(tabla);
+
+                    Statement st =
+                            connection.createStatement();
+
+                    String columnaFecha =
+                            obtenerColumnaFecha(
+                                    tabla
+                            );
+
+                    ResultSet rs;
+
+                    if(columnaFecha != null
+                            && filtro != null) {
+
+                        String query =
+                                "SELECT * FROM `"
+                                + tabla
+                                + "` WHERE "
+                                + String.format(
+                                        filtro,
+                                        columnaFecha,
+                                        columnaFecha
+                                );
+
+                        rs = st.executeQuery(query);
+
+                    } else {
+
+                        rs = st.executeQuery(
+                                "SELECT * FROM `"
+                                + tabla
+                                + "`"
+                        );
+                    }
+
+                    ResultSetMetaData rsmd =
+                            rs.getMetaData();
+
+                    int columnas =
+                            rsmd.getColumnCount();
+
+                    CellStyle headerStyle =
+                            workbook.createCellStyle();
+
+                    Font font =
+                            workbook.createFont();
+
+                    font.setBold(true);
+
+                    headerStyle.setFont(font);
+
+                    Row header =
+                            sheet.createRow(0);
+
+                    for(int i = 1;
+                        i <= columnas;
+                        i++) {
+
+                        Cell cell =
+                                header.createCell(i - 1);
+
+                        cell.setCellValue(
+                                rsmd.getColumnName(i)
+                        );
+
+                        cell.setCellStyle(
+                                headerStyle
+                        );
+                    }
+
+                    int fila = 1;
+
+                    while(rs.next()) {
+
+                        Row row =
+                                sheet.createRow(fila++);
+
+                        for(int i = 1;
+                            i <= columnas;
+                            i++) {
+
+                            Object valor =
+                                    rs.getObject(i);
+
+                            row.createCell(i - 1)
+                                    .setCellValue(
+                                            valor != null
+                                            ? valor.toString()
+                                            : ""
+                                    );
+                        }
+                    }
+
+                    for(int i = 0;
+                        i < columnas;
+                        i++) {
+
+                        sheet.autoSizeColumn(i);
+                    }
+
+                    rs.close();
+                    st.close();
+
+                } catch(Exception ex) {
+
+                    System.out.println(
+                            "Error exportando tabla: "
+                            + tabla
+                    );
+
+                    ex.printStackTrace();
+                }
+            }
+
+            tablas.close();
+            tablasStmt.close();
+
+            try(FileOutputStream fos =
+                        new FileOutputStream(
+                                rutaCompleta
+                        )) {
+
+                workbook.write(fos);
+            }
+
+            workbook.close();
+
+            System.out.println(
+                    "Excel filtrado generado"
+            );
+
             return true;
-        } catch (Exception ex) {
-            System.err.println("Error generando Excel: " + ex.getMessage());
+
+        } catch(Exception ex) {
+
+            ex.printStackTrace();
             return false;
         }
     }
 
-    /**
-     * Genera reporte de pensiones en Excel
-     */
-    public boolean generarReportePensiones(int activas, int vencidas, int canceladas,
-                                          double ingresoMensual) {
-        try {
-            String nombre = "Reporte_Pensiones_" + LocalDate.now() + ".xlsx";
-            String rutaCompleta = rutaSalida + File.separator + nombre;
+    private String obtenerColumnaFecha(
+            String tabla
+    ) {
 
-            File archivo = new File(rutaCompleta);
-            archivo.getParentFile().mkdirs();
-            archivo.createNewFile();
+        switch(tabla) {
 
-            System.out.println("Excel generado: " + rutaCompleta);
-            return true;
-        } catch (Exception ex) {
-            System.err.println("Error generando Excel: " + ex.getMessage());
-            return false;
+            case "registros_entrada_salida":
+                return "fecha_entrada";
+
+            case "historial_eventos":
+                return "fecha";
+
+            case "pensiones":
+                return "fecha_inicio";
+
+            case "facturas_restaurante":
+                return "fecha";
+
+            case "notificaciones":
+                return "fecha";
+
+            case "clientes":
+                return "fecha_registro";
+
+            case "vehiculos":
+                return "fecha_registro";
+
+            case "usuarios":
+                return "fecha_creacion";
+
+            case "clientes_restaurante":
+                return "fecha_registro";
+
+            case "registros_uso_restaurante":
+                return "fecha";
+
+            case "promociones":
+                return "fecha_inicio";
+
+            case "convenios_restaurante":
+                return "fecha_inicio";
+
+            default:
+                return null;
         }
     }
+<<<<<<< HEAD
 
     /**
      * Genera reporte de clientes y vehículos
@@ -149,3 +524,6 @@ public class GeneradorExcel {
         this.rutaSalida = rutaSalida;
     }
 }
+=======
+}
+>>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca

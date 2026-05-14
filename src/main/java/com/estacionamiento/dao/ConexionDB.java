@@ -67,6 +67,7 @@ public class ConexionDB {
     public Connection getConexion() {
         if (conexion == null) {
             conectar();
+            
         }
         try {
             if (conexion.isClosed()) {
