@@ -3,6 +3,7 @@ package com.estacionamiento.dao;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import com.estacionamiento.api.HttpJdbcBridge;
 import com.estacionamiento.utilidades.Logger;
 
 /**
@@ -12,11 +13,12 @@ import com.estacionamiento.utilidades.Logger;
 public class ConexionDB {
     private static ConexionDB instancia;
     private Connection conexion;
+    private static final boolean USAR_API_HTTPS = true;
     
-    // Parámetros de conexión - Google Cloud SQL
-    private static final String URL = "jdbc:mysql://34.63.132.87:3306/estacionamiento?useSSL=true&requireSSL=true&serverTimezone=America/Mexico_City&allowPublicKeyRetrieval=true";
-    private static final String USUARIO = "estacionamiento";
-    private static final String CONTRASENA = "J@Q^l1SKvD:>7JzR";
+    // Parámetros de conexión - GoogieHost
+    private static final String URL = "jdbc:mysql://cloud3.googiehost.com:3306/piuqnwsm_estacionamiento?useSSL=true&requireSSL=true&serverTimezone=America/Mexico_City&allowPublicKeyRetrieval=true";
+    private static final String USUARIO = "piuqnwsm_estacionamiento";
+    private static final String CONTRASENA = "eku2wCt53zKkzh7tk9Mn";
     private static final String DRIVER = "com.mysql.cj.jdbc.Driver";
 
     /**
@@ -65,9 +67,20 @@ public class ConexionDB {
      * @return objeto Connection si está conectado, null en caso contrario
      */
     public Connection getConexion() {
+        if (USAR_API_HTTPS) {
+            if (conexion == null) {
+                conexion = HttpJdbcBridge.open();
+                Logger.info("Usando conexion por API HTTPS");
+            }
+            return conexion;
+        }
+
         if (conexion == null) {
             conectar();
-            
+            if (conexion == null) {
+                Logger.info("Usando conexion por API HTTPS");
+                return HttpJdbcBridge.open();
+            }
         }
         try {
             if (conexion.isClosed()) {

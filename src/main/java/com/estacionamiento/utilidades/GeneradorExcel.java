@@ -3,18 +3,23 @@ package com.estacionamiento.utilidades;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import com.estacionamiento.dao.ConexionDB;
+
 import java.io.File;
-<<<<<<< HEAD
-=======
 import java.io.FileOutputStream;
 import java.sql.*;
->>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
 public class GeneradorExcel {
 
     private String rutaSalida;
     private Connection connection;
+
+    public GeneradorExcel(String rutaSalida) {
+        this(rutaSalida, ConexionDB.getInstancia().getConexion());
+    }
 
     public GeneradorExcel(
             String rutaSalida,
@@ -454,7 +459,6 @@ public class GeneradorExcel {
                 return null;
         }
     }
-<<<<<<< HEAD
 
     /**
      * Genera reporte de clientes y vehículos
@@ -524,6 +528,3 @@ public class GeneradorExcel {
         this.rutaSalida = rutaSalida;
     }
 }
-=======
-}
->>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca

@@ -1295,20 +1295,13 @@ class PromocionesImpl extends VBox {
         Button guardar=UI.btnPrimario(editar==null?"Guardar":"Actualizar"); Button cancelar=UI.btnSecundario("Cancelar"); cancelar.setOnAction(e->ven.close());
         guardar.setOnAction(e->{
             try{
-<<<<<<< HEAD
-                double pct=Double.parseDouble(fDescPct.getText().trim());
-                Integer estId = seleccionEstId;
-                if (estId == null) { UI.setError(err, "Debe seleccionar un estacionamiento"); return; }
-                Promocion p=editar!=null?editar:new Promocion(fNombre.getText().trim(),fDesc.getText().trim(),pct,dpIni.getValue().atStartOfDay(),dpFin.getValue().atTime(23,59),comboTipo.getValue(),estId);
-                if(editar!=null){ p.setNombre(fNombre.getText().trim()); p.setDescripcion(fDesc.getText().trim()); p.setDescuentoPorcentaje(pct); p.setTipoVehiculo(comboTipo.getValue()); p.setActiva(cbActiva.isSelected()); p.setFechaInicio(dpIni.getValue().atStartOfDay()); p.setFechaFin(dpFin.getValue().atTime(23,59)); }
-=======
                 double pct=Double.parseDouble(fDescPct.getText().trim().isEmpty()?"0":fDescPct.getText().trim());
                 double fijo=Double.parseDouble(fDescFijo.getText().trim().isEmpty()?"0":fDescFijo.getText().trim());
                 int horas=Integer.parseInt(fHorasGratis.getText().trim().isEmpty()?"0":fHorasGratis.getText().trim());
-                int estId=Integer.parseInt(fEst.getText().trim());
+                Integer estId = seleccionEstId;
+                if (estId == null) { UI.setError(err, "Debe seleccionar un estacionamiento"); return; }
                 Promocion p=editar!=null?editar:new Promocion(fNombre.getText().trim(),fDesc.getText().trim(),pct,fijo,horas,dpIni.getValue().atStartOfDay(),dpFin.getValue().atTime(23,59),comboTipo.getValue(),estId);
                 if(editar!=null){ p.setNombre(fNombre.getText().trim()); p.setDescripcion(fDesc.getText().trim()); p.setDescuentoPorcentaje(pct); p.setDescuentoFijo(fijo); p.setHorasGratis(horas); p.setTipoVehiculo(comboTipo.getValue()); p.setActiva(cbActiva.isSelected()); p.setFechaInicio(dpIni.getValue().atStartOfDay()); p.setFechaFin(dpFin.getValue().atTime(23,59)); }
->>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
                 String error=ctrl.validarPromocion(p); if(error!=null){UI.setError(err,error);return;}
                 boolean ok=editar==null?ctrl.crearPromocion(p):ctrl.actualizarPromocion(p);
                 if(ok){cargar();ven.close();}else UI.setError(err,"Error al guardar.");

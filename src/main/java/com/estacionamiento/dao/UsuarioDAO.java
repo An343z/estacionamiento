@@ -1,5 +1,6 @@
 package com.estacionamiento.dao;
 
+import com.estacionamiento.api.UsuarioApi;
 import com.estacionamiento.modelos.Usuario;
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -81,6 +82,10 @@ public class UsuarioDAO {
      * @return objeto Usuario si la autenticación es exitosa, null en caso contrario
      */
     public Usuario autenticar(String usuario, String contrasena) {
+        if (conexion == null) {
+            return new UsuarioApi().autenticar(usuario, contrasena);
+        }
+
         String sql = "SELECT * FROM usuarios WHERE usuario = ? AND contrasena = ? AND activo = true";
         
         try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
@@ -94,6 +99,7 @@ public class UsuarioDAO {
             }
         } catch (SQLException e) {
             System.err.println("Error en autenticación: " + e.getMessage());
+            return new UsuarioApi().autenticar(usuario, contrasena);
         }
         return null;
     }

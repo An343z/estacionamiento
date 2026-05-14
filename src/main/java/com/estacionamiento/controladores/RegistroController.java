@@ -7,10 +7,6 @@ import com.estacionamiento.dao.CajonDAO;
 import com.estacionamiento.dao.EstacionamientoDAO;
 import com.estacionamiento.dao.PrecioDAO;
 import com.estacionamiento.dao.RegistroEntradaSalidaDAO;
-<<<<<<< HEAD
-import com.estacionamiento.modelos.Precio;
-import com.estacionamiento.modelos.RegistroEntradaSalida;
-=======
 import com.estacionamiento.dao.VehiculoDAO;
 import com.estacionamiento.modelos.HistorialEvento;
 import com.estacionamiento.modelos.Pension;
@@ -18,7 +14,6 @@ import com.estacionamiento.modelos.Precio;
 import com.estacionamiento.modelos.Promocion;
 import com.estacionamiento.modelos.RegistroEntradaSalida;
 import com.estacionamiento.modelos.Vehiculo;
->>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
 import com.estacionamiento.utilidades.DateUtils;
 
 /**
@@ -111,15 +106,6 @@ public class RegistroController {
         // ===== INSERTAR =====
 
         if (registroDAO.crear(registro)) {
-<<<<<<< HEAD
-            // Cambiar estado del cajón a ocupado
-            cajonDAO.cambiarEstado(cajonId, "ocupado");
-            
-            // Actualizar cajones disponibles del estacionamiento
-            int disponibles = cajonDAO.contarDisponibles(estacionamientoId);
-            estacionamientoDAO.actualizarCajonesDisponibles(estacionamientoId, disponibles);
-            
-=======
 
             // Cambiar estado del cajón
             cajonDAO.cambiarEstado(cajonId, "Ocupado");
@@ -165,7 +151,6 @@ public class RegistroController {
                 );
             }
 
->>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
             return true;
         }
 
@@ -308,17 +293,6 @@ public class RegistroController {
                     );
         }
 
-<<<<<<< HEAD
-        // Finalizar el registro
-        if (registroDAO.finalizarRegistro(registro.getId(), ahora, monto)) {
-            // Cambiar estado del cajón a libre
-            cajonDAO.cambiarEstado(registro.getCajonId(), "libre");
-            
-            // Actualizar cajones disponibles del estacionamiento
-            int disponibles = cajonDAO.contarDisponibles(estacionamientoId);
-            estacionamientoDAO.actualizarCajonesDisponibles(estacionamientoId, disponibles);
-            
-=======
         if (registroDAO.finalizarRegistro(
                 registro.getId(),
                 ahora,
@@ -341,7 +315,6 @@ public class RegistroController {
                     disponibles
             );
 
->>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
             registro.setFechaSalida(ahora);
             registro.setMonto(monto);
             registro.setPromocionAplicada(promocionAplicada);
@@ -414,18 +387,6 @@ public class RegistroController {
         );
     }
 
-<<<<<<< HEAD
-    public double obtenerIngresoDeLosUltimosDias(int estacionamientoId, int dias) {
-        double total = 0;
-        LocalDateTime now = LocalDateTime.now();
-        for (int i = 0; i < dias; i++) {
-            LocalDateTime fecha = now.minusDays(i);
-            total += registroDAO.obtenerIngresoDelDia(estacionamientoId, fecha);
-        }
-        return total;
-    }
-}
-=======
     public boolean registrarCambioCajon(
             int clienteId,
             int vehiculoId,
@@ -503,4 +464,3 @@ public class RegistroController {
         }
     }
 }
->>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca

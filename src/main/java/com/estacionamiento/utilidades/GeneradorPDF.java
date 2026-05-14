@@ -4,20 +4,21 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
+import com.estacionamiento.dao.ConexionDB;
 
 import java.io.File;
-<<<<<<< HEAD
-import java.time.LocalDate;
-import java.util.List;
-=======
 import java.sql.*;
 import java.time.LocalDate;
->>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
+import java.util.List;
 
 public class GeneradorPDF {
 
     private String rutaSalida;
     private Connection connection;
+
+    public GeneradorPDF(String rutaSalida) {
+        this(rutaSalida, ConexionDB.getInstancia().getConexion());
+    }
 
     public GeneradorPDF(
             String rutaSalida,
@@ -319,7 +320,6 @@ public class GeneradorPDF {
                 return null;
         }
     }
-<<<<<<< HEAD
 
     /**
      * Genera reporte de pensiones activas
@@ -390,6 +390,3 @@ public class GeneradorPDF {
         this.rutaSalida = rutaSalida;
     }
 }
-=======
-}
->>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca

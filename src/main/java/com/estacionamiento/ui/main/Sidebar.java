@@ -64,17 +64,7 @@ public class Sidebar extends VBox {
         setMaxWidth(230);
         setSpacing(0);
 
-<<<<<<< HEAD
-        VBox logo    = crearLogo();
-        VBox info    = crearInfoUsuario();
-        ScrollPane scroll = crearScrollArea();
-        VBox cierre  = crearPanelCierre();
-
-        getChildren().addAll(logo, info, scroll, cierre);
-        VBox.setVgrow(scroll, Priority.ALWAYS);
-=======
-        getChildren().addAll(crearLogo(), crearInfoUsuario(), crearMenuScroll(), spacer(), crearPanelCierre());
->>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
+        getChildren().addAll(crearLogo(), crearInfoUsuario(), crearMenuScroll(), crearPanelCierre());
     }
 
     private VBox crearLogo() {
@@ -133,24 +123,6 @@ public class Sidebar extends VBox {
         scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
         VBox.setVgrow(scroll, Priority.ALWAYS);
-        return scroll;
-    }
-
-    private ScrollPane crearScrollArea() {
-        VBox contenido = new VBox(0);
-        contenido.setPrefWidth(200);
-        contenido.setMinWidth(200);
-        contenido.setStyle("-fx-background-color:transparent;");
-        contenido.setPadding(new Insets(0));
-        contenido.getChildren().add(crearMenu());
-
-        ScrollPane scroll = new ScrollPane(contenido);
-        scroll.setFitToWidth(true);
-        scroll.setFitToHeight(false);
-        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        scroll.setStyle("-fx-background:transparent;-fx-background-color:transparent;-fx-padding:0;-fx-control-inner-background:#12122a;");
-        scroll.setMinHeight(100);
         return scroll;
     }
 

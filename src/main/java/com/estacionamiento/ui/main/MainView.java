@@ -1,35 +1,16 @@
 package com.estacionamiento.ui.main;
 
-<<<<<<< HEAD
-import com.estacionamiento.controladores.EstacionamientoController;
-=======
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
->>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
+import com.estacionamiento.controladores.EstacionamientoController;
 import com.estacionamiento.controladores.NotificacionController;
 import com.estacionamiento.modelos.Estacionamiento;
 import com.estacionamiento.ui.Session;
 import com.estacionamiento.ui.UI;
-<<<<<<< HEAD
 import com.estacionamiento.ui.modules.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-=======
-import com.estacionamiento.ui.modules.CajonesModule;
-import com.estacionamiento.ui.modules.ClientesModule;
-import com.estacionamiento.ui.modules.ConfiguracionModule;
-import com.estacionamiento.ui.modules.DashboardModule;
-import com.estacionamiento.ui.modules.EstacionamientosModule;
-import com.estacionamiento.ui.modules.NotificacionesModule;
-import com.estacionamiento.ui.modules.PensionesModule;
-import com.estacionamiento.ui.modules.PreciosModule;
-import com.estacionamiento.ui.modules.PromocionesModule;
-import com.estacionamiento.ui.modules.RegistrosModule;
-import com.estacionamiento.ui.modules.ReportesModule;
-import com.estacionamiento.ui.modules.VehiculosModule;
-
->>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ComboBox;
@@ -132,11 +113,7 @@ public class MainView extends BorderPane {
     private void navegar(Sidebar.Modulo modulo) {
         if (modulo == null) { Session.getInstance().cerrar(); onLogout.run(); return; }
 
-<<<<<<< HEAD
         moduloActual = modulo;
-=======
-        System.out.println("[DEBUG] navegando a modulo=" + modulo);
->>>>>>> ae0b63095fbe93b7e25bc1755f899c623dd6c5ca
         titleLabel.setText(modulo.etiqueta);
 
         javafx.scene.Node vista = switch (modulo) {
