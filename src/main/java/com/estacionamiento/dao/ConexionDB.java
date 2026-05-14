@@ -43,6 +43,14 @@ public class ConexionDB {
      * @return true si la conexión fue exitosa, false en caso contrario
      */
     public boolean conectar() {
+        if (USAR_API_HTTPS) {
+            if (conexion == null) {
+                conexion = HttpJdbcBridge.open();
+                Logger.info("Usando conexion por API HTTPS");
+            }
+            return true;
+        }
+
         try {
             // Cargar el driver de MySQL
             Class.forName(DRIVER);
