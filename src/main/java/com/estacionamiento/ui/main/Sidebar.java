@@ -39,6 +39,7 @@ public class Sidebar extends VBox {
         PRECIOS          ("💵", "Precios",            "Servicios"),
         PROMOCIONES      ("🎫", "Promociones",        "Servicios"),
         CORREO_RECORDATORIO ("✉️", "Recordatorio Email", "Servicios"),
+        USUARIOS         ("👥", "Usuarios",           "Sistema"),
         NOTIFICACIONES   ("🔔", "Notificaciones",     "Sistema"),
         REPORTES         ("📈", "Reportes",           "Sistema"),
         CONFIGURACION    ("⚙️",  "Configuración",     "Sistema");
@@ -175,6 +176,7 @@ public class Sidebar extends VBox {
     private boolean tienePermiso(Modulo m) {
         Session s = Session.getInstance();
         return switch (m) {
+            case USUARIOS -> s.isAdmin();
             // Solo Admin Global
             case ESTACIONAMIENTOS, CONFIGURACION -> s.isAdmin();
             // Admin o Encargado
