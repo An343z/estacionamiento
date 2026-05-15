@@ -3,7 +3,8 @@ package com.estacionamiento.ui.main;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-
+import com.estacionamiento.controladores.EstacionamientoController;
+import com.estacionamiento.modelos.Estacionamiento;
 import com.estacionamiento.ui.Session;
 import com.estacionamiento.ui.UI;
 
@@ -26,26 +27,31 @@ import javafx.scene.text.FontWeight;
 public class Sidebar extends VBox {
 
     public enum Modulo {
-        DASHBOARD        ("📊", "Dashboard",         "Principal"),
-        ESTACIONAMIENTOS ("🏢", "Estacionamientos",  "Principal"),
-        CAJONES          ("🅿️",  "Cajones",           "Principal"),
-        REGISTROS        ("🚗", "Entrada / Salida",   "Operaciones"),
+        DASHBOARD("📊", "Dashboard", "Principal"),
+        ESTACIONAMIENTOS("🏢", "Estacionamientos", "Principal"),
+        CAJONES("🅿️", "Cajones", "Principal"),
+        REGISTROS("🚗", "Entrada / Salida", "Operaciones"),
         // ── MÓDULO CAJA (nuevo) ──────────────────────────────
-        CAJA             ("💰", "Caja",               "Operaciones"),
+        CAJA("💰", "Caja", "Operaciones"),
         // ────────────────────────────────────────────────────
-        CLIENTES         ("👤", "Clientes",           "Gestión"),
-        VEHICULOS        ("🚙", "Vehículos",          "Gestión"),
-        PENSIONES        ("👥", "Pensiones",          "Servicios"),
-        PRECIOS          ("💵", "Precios",            "Servicios"),
-        PROMOCIONES      ("🎫", "Promociones",        "Servicios"),
-        CORREO_RECORDATORIO ("✉️", "Recordatorio Email", "Servicios"),
-        USUARIOS         ("👥", "Usuarios",           "Sistema"),
-        NOTIFICACIONES   ("🔔", "Notificaciones",     "Sistema"),
-        REPORTES         ("📈", "Reportes",           "Sistema"),
-        CONFIGURACION    ("⚙️",  "Configuración",     "Sistema");
+        CLIENTES("👤", "Clientes", "Gestión"),
+        VEHICULOS("🚙", "Vehículos", "Gestión"),
+        PENSIONES("👥", "Pensiones", "Servicios"),
+        PRECIOS("💵", "Precios", "Servicios"),
+        PROMOCIONES("🎫", "Promociones", "Servicios"),
+        CORREO_RECORDATORIO("✉️", "Recordatorio Email", "Servicios"),
+        USUARIOS("👥", "Usuarios", "Sistema"),
+        NOTIFICACIONES("🔔", "Notificaciones", "Sistema"),
+        REPORTES("📈", "Reportes", "Sistema"),
+        CONFIGURACION("⚙️", "Configuración", "Sistema");
 
         public final String icono, etiqueta, seccion;
-        Modulo(String i, String e, String s) { icono=i; etiqueta=e; seccion=s; }
+
+        Modulo(String i, String e, String s) {
+            icono = i;
+            etiqueta = e;
+            seccion = s;
+        }
     }
 
     private Modulo moduloActivo;
@@ -83,16 +89,41 @@ public class Sidebar extends VBox {
 
     private VBox crearInfoUsuario() {
         Session s = Session.getInstance();
+
         VBox outer = new VBox();
         outer.setPadding(new Insets(10, 12, 10, 12));
+
         VBox inner = new VBox(2);
         inner.setPadding(new Insets(10, 12, 10, 12));
         inner.setStyle("-fx-background-color:rgba(255,255,255,0.05);-fx-background-radius:8;");
+
         Label nombre = new Label("👤 " + s.getNombreCompleto());
         nombre.setStyle("-fx-text-fill:white;-fx-font-size:13px;-fx-font-weight:bold;");
+
         Label rol = new Label(s.getRolNombre().toUpperCase());
         rol.setStyle("-fx-text-fill:rgba(255,255,255,0.4);-fx-font-size:9px;-fx-letter-spacing:0.8;");
+
         inner.getChildren().addAll(nombre, rol);
+
+        // ───────── ESTACIONAMIENTO (CORREGIDO) ─────────
+        Integer estId = s.getEstacionamientoActualId();
+        String nombreEst = "Sin estacionamiento asignado";
+
+        if (estId != null) {
+            try {
+                EstacionamientoController estCtrl = new EstacionamientoController();
+                Estacionamiento est = estCtrl.obtenerEstacionamiento(estId);
+                nombreEst = est != null ? est.getNombre() : "Estacionamiento #" + estId;
+            } catch (Exception ex) {
+                nombreEst = "Estacionamiento #" + estId;
+            }
+        }
+
+        Label estacionamiento = new Label("📍 " + nombreEst);
+        estacionamiento.setWrapText(true);
+        estacionamiento.setStyle("-fx-text-fill:#facc15;-fx-font-size:11px;-fx-font-weight:bold;");
+        inner.getChildren().add(estacionamiento);
+
         outer.getChildren().add(inner);
         return outer;
     }
@@ -103,7 +134,8 @@ public class Sidebar extends VBox {
         String seccionActual = "";
 
         for (Modulo m : Modulo.values()) {
-            if (!tienePermiso(m)) continue;
+            if (!tienePermiso(m))
+                continue;
 
             if (!m.seccion.equals(seccionActual)) {
                 seccionActual = m.seccion;
@@ -130,13 +162,19 @@ public class Sidebar extends VBox {
     private Button crearBoton(Modulo m) {
         HBox cont = new HBox(10);
         cont.setAlignment(Pos.CENTER_LEFT);
-        Label ico = new Label(m.icono); ico.setFont(Font.font(16)); ico.setMinWidth(20); ico.setStyle("-fx-text-fill:white;");
-        Label lbl = new Label(m.etiqueta); lbl.setStyle("-fx-text-fill:white;-fx-font-size:13px;");
+        Label ico = new Label(m.icono);
+        ico.setFont(Font.font(16));
+        ico.setMinWidth(20);
+        ico.setStyle("-fx-text-fill:white;");
+        Label lbl = new Label(m.etiqueta);
+        lbl.setStyle("-fx-text-fill:white;-fx-font-size:13px;");
 
         if (m == Modulo.NOTIFICACIONES) {
             badgeNotif = new Label("!");
-            badgeNotif.setStyle("-fx-background-color:#ef4444;-fx-text-fill:white;-fx-background-radius:10;-fx-padding:1 6;-fx-font-size:9px;-fx-font-weight:bold;");
-            Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
+            badgeNotif.setStyle(
+                    "-fx-background-color:#ef4444;-fx-text-fill:white;-fx-background-radius:10;-fx-padding:1 6;-fx-font-size:9px;-fx-font-weight:bold;");
+            Region sp = new Region();
+            HBox.setHgrow(sp, Priority.ALWAYS);
             cont.getChildren().addAll(ico, lbl, sp, badgeNotif);
         } else {
             cont.getChildren().addAll(ico, lbl);
@@ -149,8 +187,14 @@ public class Sidebar extends VBox {
         btn.setUserData(m);
         aplicarEstilo(btn, false);
 
-        btn.setOnAction(e -> { setActivo(m); onNavegar.accept(m); });
-        btn.setOnMouseEntered(e -> { if (btn.getUserData() != moduloActivo) btn.setStyle(hoverStyle()); });
+        btn.setOnAction(e -> {
+            setActivo(m);
+            onNavegar.accept(m);
+        });
+        btn.setOnMouseEntered(e -> {
+            if (btn.getUserData() != moduloActivo)
+                btn.setStyle(hoverStyle());
+        });
         btn.setOnMouseExited(e -> aplicarEstilo(btn, btn.getUserData() == moduloActivo));
         return btn;
     }
@@ -165,8 +209,12 @@ public class Sidebar extends VBox {
         lbl.setStyle("-fx-text-fill:rgba(255,255,255,0.4);-fx-font-size:10px;");
         Button btnCerrar = new Button("🚪 Cerrar sesión");
         btnCerrar.setMaxWidth(Double.MAX_VALUE);
-        btnCerrar.setStyle("-fx-background-color:rgba(239,68,68,0.15);-fx-text-fill:#fca5a5;-fx-font-size:11px;-fx-font-weight:bold;-fx-background-radius:6;-fx-cursor:hand;-fx-padding:7 12;");
-        btnCerrar.setOnAction(e -> { Session.getInstance().cerrar(); onNavegar.accept(null); });
+        btnCerrar.setStyle(
+                "-fx-background-color:rgba(239,68,68,0.15);-fx-text-fill:#fca5a5;-fx-font-size:11px;-fx-font-weight:bold;-fx-background-radius:6;-fx-cursor:hand;-fx-padding:7 12;");
+        btnCerrar.setOnAction(e -> {
+            Session.getInstance().cerrar();
+            onNavegar.accept(null);
+        });
         inner.getChildren().addAll(lbl, btnCerrar);
         outer.getChildren().add(inner);
         return outer;
@@ -180,7 +228,7 @@ public class Sidebar extends VBox {
             // Solo Admin Global
             case ESTACIONAMIENTOS, CONFIGURACION -> s.isAdmin();
             // Admin o Encargado
-            case REPORTES, PRECIOS, PROMOCIONES  -> s.isAdmin() || s.isEncargado();
+            case REPORTES, PRECIOS, PROMOCIONES -> s.isAdmin() || s.isEncargado();
             // Caja: todos (cajero, encargado, admin)
             case CAJA -> true;
             // El resto también todos
@@ -191,20 +239,36 @@ public class Sidebar extends VBox {
     // ---- Estilos ----
     public void setActivo(Modulo m) {
         moduloActivo = m;
-        for (Button b : botones) aplicarEstilo(b, b.getUserData() == m);
+        for (Button b : botones)
+            aplicarEstilo(b, b.getUserData() == m);
     }
 
     private void aplicarEstilo(Button b, boolean activo) {
         b.setStyle(activo ? activoStyle() : normalStyle());
     }
 
-    private String activoStyle()  { return "-fx-background-color:rgba(59,130,246,0.15);-fx-text-fill:white;-fx-border-color:transparent transparent transparent #3b82f6;-fx-border-width:0 0 0 3;-fx-cursor:hand;-fx-alignment:CENTER-LEFT;"; }
-    private String normalStyle()  { return "-fx-background-color:transparent;-fx-text-fill:white;-fx-border-color:transparent;-fx-cursor:hand;-fx-alignment:CENTER-LEFT;"; }
-    private String hoverStyle()   { return "-fx-background-color:rgba(255,255,255,0.06);-fx-text-fill:white;-fx-border-color:transparent;-fx-cursor:hand;-fx-alignment:CENTER-LEFT;"; }
+    private String activoStyle() {
+        return "-fx-background-color:rgba(59,130,246,0.15);-fx-text-fill:white;-fx-border-color:transparent transparent transparent #3b82f6;-fx-border-width:0 0 0 3;-fx-cursor:hand;-fx-alignment:CENTER-LEFT;";
+    }
+
+    private String normalStyle() {
+        return "-fx-background-color:transparent;-fx-text-fill:white;-fx-border-color:transparent;-fx-cursor:hand;-fx-alignment:CENTER-LEFT;";
+    }
+
+    private String hoverStyle() {
+        return "-fx-background-color:rgba(255,255,255,0.06);-fx-text-fill:white;-fx-border-color:transparent;-fx-cursor:hand;-fx-alignment:CENTER-LEFT;";
+    }
 
     public void setBadgeNotif(int cantidad) {
-        if (badgeNotif == null) return;
-        if (cantidad > 0) { badgeNotif.setText(String.valueOf(cantidad)); badgeNotif.setVisible(true); badgeNotif.setManaged(true); }
-        else              { badgeNotif.setVisible(false); badgeNotif.setManaged(false); }
+        if (badgeNotif == null)
+            return;
+        if (cantidad > 0) {
+            badgeNotif.setText(String.valueOf(cantidad));
+            badgeNotif.setVisible(true);
+            badgeNotif.setManaged(true);
+        } else {
+            badgeNotif.setVisible(false);
+            badgeNotif.setManaged(false);
+        }
     }
 }

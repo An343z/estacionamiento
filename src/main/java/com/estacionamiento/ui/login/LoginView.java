@@ -1,6 +1,8 @@
 package com.estacionamiento.ui.login;
 
+import com.estacionamiento.controladores.EstacionamientoController;
 import com.estacionamiento.controladores.UsuarioController;
+import com.estacionamiento.modelos.Estacionamiento;
 import com.estacionamiento.modelos.Usuario;
 import com.estacionamiento.ui.Session;
 import com.estacionamiento.ui.UI;
@@ -37,11 +39,11 @@ public class LoginView extends BorderPane {
         // Panel izquierdo de marca
         VBox panelMarca = crearPanelMarca();
         // Panel derecho del formulario
-        VBox panelForm  = crearPanelFormulario();
+        VBox panelForm = crearPanelFormulario();
 
         HBox contenido = new HBox();
         HBox.setHgrow(panelMarca, Priority.ALWAYS);
-        HBox.setHgrow(panelForm,  Priority.ALWAYS);
+        HBox.setHgrow(panelForm, Priority.ALWAYS);
         contenido.getChildren().addAll(panelMarca, panelForm);
         setCenter(contenido);
         setStyle("-fx-background-color:" + UI.SIDEBAR + ";");
@@ -70,15 +72,16 @@ public class LoginView extends BorderPane {
         VBox features = new VBox(14);
         features.setAlignment(Pos.CENTER_LEFT);
         String[][] feats = {
-            {"🅿️", "Control de cajones en tiempo real"},
-            {"👥", "Gestión de pensionados y clientes"},
-            {"📊", "Reportes e indicadores financieros"},
-            {"🔔", "Notificaciones y alertas del sistema"}
+                { "🅿️", "Control de cajones en tiempo real" },
+                { "👥", "Gestión de pensionados y clientes" },
+                { "📊", "Reportes e indicadores financieros" },
+                { "🔔", "Notificaciones y alertas del sistema" }
         };
         for (String[] f : feats) {
             HBox item = new HBox(12);
             item.setAlignment(Pos.CENTER_LEFT);
-            Label ico = new Label(f[0]); ico.setFont(Font.font(20));
+            Label ico = new Label(f[0]);
+            ico.setFont(Font.font(20));
             Label txt = new Label(f[1]);
             txt.setStyle("-fx-text-fill:rgba(255,255,255,0.65);-fx-font-size:13px;");
             item.getChildren().addAll(ico, txt);
@@ -102,15 +105,14 @@ public class LoginView extends BorderPane {
         subtitulo.setStyle("-fx-text-fill:" + UI.MUTED + ";-fx-font-size:13px;");
 
         // Campos
-        campoUsuario  = UI.campo("Nombre de usuario");
+        campoUsuario = UI.campo("Nombre de usuario");
         campoPassword = UI.campoPassword("Contraseña");
         campoPassword.setOnAction(e -> intentarLogin());
 
         VBox formCampos = new VBox(12);
         formCampos.getChildren().addAll(
-            UI.grupoCampo("Usuario *", campoUsuario),
-            UI.grupoCampo("Contraseña *", campoPassword)
-        );
+                UI.grupoCampo("Usuario *", campoUsuario),
+                UI.grupoCampo("Contraseña *", campoPassword));
 
         // Error
         errorLabel = UI.errorLabel();
@@ -129,8 +131,8 @@ public class LoginView extends BorderPane {
 
         // Info de roles
         Label infoRoles = UI.alertaInfo(
-            "Roles disponibles: Administrador Global (rol 1), " +
-            "Encargado (rol 2), Cajero (rol 3)");
+                "Roles disponibles: Administrador Global (rol 1), " +
+                        "Encargado (rol 2), Cajero (rol 3)");
 
         panel.getChildren().addAll(titulo, subtitulo, formCampos,
                 errorLabel, loadingLabel, btnLogin, infoRoles);
@@ -138,7 +140,7 @@ public class LoginView extends BorderPane {
     }
 
     private void intentarLogin() {
-        String usuario  = campoUsuario.getText().trim();
+        String usuario = campoUsuario.getText().trim();
         String password = campoPassword.getText();
 
         if (usuario.isBlank()) {
@@ -166,15 +168,35 @@ public class LoginView extends BorderPane {
                 btnLogin.setDisable(false);
 
                 if (u != null) {
+
                     Session.getInstance().iniciar(u);
+
+                    // ───── MEJORA: FORZAR CARGA DE NOMBRE DEL ESTACIONAMIENTO ─────
+                    if (u.getEstacionamientoId() != null) {
+                        try {
+                            EstacionamientoController estCtrl = new EstacionamientoController();
+                            Estacionamiento est = estCtrl.obtenerEstacionamiento(u.getEstacionamientoId());
+                            if (est != null) {
+                                Session.getInstance().setEstacionamientoActualId(est.getId());
+                                Session.getInstance().setEstacionamientoActualNombre(est.getNombre());
+                            }
+                        } catch (Exception ex) {
+                            System.err.println("Error al cargar estacionamiento: " + ex.getMessage());
+                            ex.printStackTrace();
+                        }
+                    }
+
                     onLoginSuccess.run();
+
                 } else {
                     UI.setError(errorLabel, "Usuario o contraseña incorrectos.");
                     campoPassword.clear();
                     campoPassword.requestFocus();
 
                     FadeTransition ft = new FadeTransition(Duration.millis(200), errorLabel);
-                    ft.setFromValue(0); ft.setToValue(1); ft.play();
+                    ft.setFromValue(0);
+                    ft.setToValue(1);
+                    ft.play();
                 }
             });
         }).start();

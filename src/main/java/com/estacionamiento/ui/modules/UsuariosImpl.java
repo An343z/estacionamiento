@@ -32,12 +32,12 @@ import java.util.List;
 // ─────────────────────────────────────────────────────────────
 class UsuariosImpl extends VBox {
 
-    private final UsuarioController    ctrl    = new UsuarioController();
+    private final UsuarioController ctrl = new UsuarioController();
     private final EstacionamientoController estCtrl = new EstacionamientoController();
 
-    private ObservableList<Usuario>    datos;
-    private TableView<Usuario>         tabla;
-    private TextField                  busqueda;
+    private ObservableList<Usuario> datos;
+    private TableView<Usuario> tabla;
+    private TextField busqueda;
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -64,41 +64,55 @@ class UsuariosImpl extends VBox {
         UI.estilizarTabla(tabla);
         datos = FXCollections.observableArrayList();
         tabla.setItems(datos);
-        VBox.setVgrow(tabla, Priority.ALWAYS);
-
-        // Columnas
-        colStr("Nombre",  u -> u.getNombre() + " " + u.getApellido(), 180);
+        
+        // ✅ PERMITIR DESPLAZAMIENTO HORIZONTAL
+        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        
+        // Columnas con anchos fijos
+        colStr("Nombre", u -> u.getNombre() + " " + u.getApellido(), 180);
         col("Usuario", "usuario", 130);
-        col("Email",   "email",   200);
+        col("Email", "email", 220);
         colRol();
         colEstacionamiento();
         colEstado();
         colAcciones();
 
         tabla.setPlaceholder(UI.panelVacio("👤", "No hay usuarios"));
+        
+        // ✅ ENVOLVER TABLA EN SCROLLPANE PARA DESPLAZAMIENTO HORIZONTAL
+        ScrollPane scrollTabla = new ScrollPane(tabla);
+        scrollTabla.setFitToWidth(true);
+        scrollTabla.setFitToHeight(true);
+        scrollTabla.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollTabla.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollTabla.setStyle("-fx-background-color:transparent;");
+        VBox.setVgrow(scrollTabla, Priority.ALWAYS);
 
         getChildren().addAll(
-            UI.encabezado("Gestión de Usuarios",
-                "Administración de cuentas del sistema", btnNuevo),
-            busqueda,
-            tabla
-        );
+                UI.encabezado("Gestión de Usuarios",
+                        "Administración de cuentas del sistema", btnNuevo),
+                busqueda,
+                scrollTabla);  // ← Usar ScrollPane en lugar de tabla directa
     }
-    private void eliminarUsuario(Usuario u) {
-    if (!UI.confirmar("Eliminar usuario",
-            "¿Eliminar permanentemente a " + u.getNombre() + " " + u.getApellido() + "?\n" +
-            "Esta acción NO se puede deshacer.")) return;
-    if (!UI.confirmar("Confirmar eliminación",
-            "¿Estás seguro? El usuario \"" + u.getUsuario() + "\" se borrará de la base de datos.")) return;
 
-    boolean ok = ctrl.eliminarUsuario(u.getId());
-    if (ok) {
-        cargar();
-        UI.mostrarInfo("Eliminado", "El usuario fue eliminado correctamente.");
-    } else {
-        UI.mostrarError("Error", "No se pudo eliminar. Puede tener registros asociados.");
+    private void eliminarUsuario(Usuario u) {
+        if (!UI.confirmar("Eliminar usuario",
+                "¿Eliminar permanentemente a " + u.getNombre() + " " + u.getApellido() + "?\n" +
+                        "Esta acción NO se puede deshacer."))
+            return;
+        if (!UI.confirmar("Confirmar eliminación",
+                "¿Estás seguro? El usuario \"" + u.getUsuario() + "\" se borrará de la base de datos."))
+            return;
+
+        boolean ok = ctrl.eliminarUsuario(u.getId());
+        if (ok) {
+            cargar();
+            UI.mostrarInfo("Eliminado", "El usuario fue eliminado correctamente.");
+        } else {
+            UI.mostrarError("Error", "No se pudo eliminar. Puede tener registros asociados.");
+        }
     }
-}
+
     // ── Columnas helper ──────────────────────────────────────
     private void col(String name, String prop, double w) {
         TableColumn<Usuario, ?> c = new TableColumn<>(name);
@@ -117,30 +131,49 @@ class UsuariosImpl extends VBox {
 
     private void colRol() {
         TableColumn<Usuario, String> c = new TableColumn<>("Rol");
-        c.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty(
-            ctrl.obtenerDescripcionRol(d.getValue().getRol())));
+        c.setCellValueFactory(d -> {
+            String rolCompleto = ctrl.obtenerDescripcionRol(d.getValue().getRol());
+            // ✅ Acortar texto para que quepa mejor
+            return new javafx.beans.property.SimpleStringProperty(
+                rolCompleto.replace("Encargado de Estacionamiento", "Encargado")
+                           .replace("Administrador Global", "Admin Global")
+            );
+        });
         c.setCellFactory(col -> new TableCell<>() {
-            @Override protected void updateItem(String v, boolean empty) {
+            @Override
+            protected void updateItem(String v, boolean empty) {
                 super.updateItem(v, empty);
-                if (empty || v == null) { setGraphic(null); return; }
+                if (empty || v == null) {
+                    setGraphic(null);
+                    return;
+                }
                 String estilo = switch (v) {
-                    case "Administrador Global"        -> UI.badgeBlue();
-                    case "Encargado de Estacionamiento"-> UI.badgeAmber();
-                    default                             -> UI.badgeGray();
+                    case "Admin Global" -> UI.badgeBlue();
+                    case "Encargado"    -> UI.badgeAmber();
+                    default             -> UI.badgeGray();
                 };
                 setGraphic(UI.badge(v, estilo));
             }
         });
-        c.setPrefWidth(180);
+        c.setPrefWidth(110);  // ✅ Más angosto porque el texto es corto
         tabla.getColumns().add(c);
     }
 
     private void colEstacionamiento() {
         TableColumn<Usuario, String> c = new TableColumn<>("Estacionamiento");
         c.setCellValueFactory(d -> {
-            String nom = d.getValue().getNombreEstacionamiento();
+            Usuario u = d.getValue();
+            // Admin Global muestra "—" en lugar de "Sin estacionamiento"
+            if (u.getRol() == 1) {
+                return new javafx.beans.property.SimpleStringProperty("—");
+            }
+            String nom = u.getNombreEstacionamiento();
+            // ✅ Acortar si es muy largo
+            if (nom != null && nom.length() > 20) {
+                nom = nom.substring(0, 18) + "…";
+            }
             return new javafx.beans.property.SimpleStringProperty(
-                nom != null ? nom : (d.getValue().getEstacionamientoId() == null ? "Global" : "—"));
+                    nom != null ? nom : (u.getEstacionamientoId() == null ? "—" : "ID: " + u.getEstacionamientoId()));
         });
         c.setPrefWidth(160);
         tabla.getColumns().add(c);
@@ -149,11 +182,15 @@ class UsuariosImpl extends VBox {
     private void colEstado() {
         TableColumn<Usuario, String> c = new TableColumn<>("Estado");
         c.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty(
-            d.getValue().isActivo() ? "Activo" : "Inactivo"));
+                d.getValue().isActivo() ? "Activo" : "Inactivo"));
         c.setCellFactory(col -> new TableCell<>() {
-            @Override protected void updateItem(String v, boolean empty) {
+            @Override
+            protected void updateItem(String v, boolean empty) {
                 super.updateItem(v, empty);
-                if (empty || v == null) { setGraphic(null); return; }
+                if (empty || v == null) {
+                    setGraphic(null);
+                    return;
+                }
                 setGraphic(UI.badge(v, "Activo".equals(v) ? UI.badgeGreen() : UI.badgeRed()));
             }
         });
@@ -165,33 +202,44 @@ class UsuariosImpl extends VBox {
         boolean esAdmin = Session.getInstance().isAdmin();
         TableColumn<Usuario, Void> c = new TableColumn<>("Acciones");
         c.setCellFactory(col -> new TableCell<>() {
-            final Button btnEdit    = UI.btnSecundario("✏️ Editar");
-            final Button btnDesact  = UI.btnSecundario("🔒");
-            final Button btnPasswd  = UI.btnSecundario("🔑");
-            final Button btnElim    = UI.btnPeligro("🗑️");
+            final Button btnEdit = UI.btnSecundario("Editar");
+            final Button btnDesact = UI.btnSecundario("Act");
+            final Button btnPasswd = UI.btnSecundario("Pass");
+            final Button btnElim = UI.btnPeligro("Elim");
             {
-                btnEdit.setStyle(btnEdit.getStyle()   + UI.BTN_SMALL);
-                btnDesact.setStyle(btnDesact.getStyle()+ UI.BTN_SMALL);
-                btnPasswd.setStyle(btnPasswd.getStyle()+ UI.BTN_SMALL);
+                btnEdit.setStyle(btnEdit.getStyle() + UI.BTN_SMALL);
+                btnDesact.setStyle(btnDesact.getStyle() + UI.BTN_SMALL);
+                btnPasswd.setStyle(btnPasswd.getStyle() + UI.BTN_SMALL);
+                btnElim.setStyle(btnElim.getStyle() + UI.BTN_SMALL);
+
+                // Tooltips explicativos
+                btnEdit.setTooltip(new Tooltip("Editar usuario"));
+                btnDesact.setTooltip(new Tooltip("Activar/Desactivar"));
+                btnPasswd.setTooltip(new Tooltip("Cambiar contraseña"));
+                btnElim.setTooltip(new Tooltip("Eliminar"));
 
                 btnEdit.setOnAction(e -> formularioUsuario(getTableView().getItems().get(getIndex())));
                 btnDesact.setOnAction(e -> toggleActivo(getTableView().getItems().get(getIndex())));
                 btnPasswd.setOnAction(e -> formularioCambiarPassword(getTableView().getItems().get(getIndex())));
-                btnElim.setStyle(btnElim.getStyle() + UI.BTN_SMALL);
                 btnElim.setOnAction(e -> eliminarUsuario(getTableView().getItems().get(getIndex())));
             }
-            @Override protected void updateItem(Void v, boolean empty) {
+
+            @Override
+            protected void updateItem(Void v, boolean empty) {
                 super.updateItem(v, empty);
-                if (empty) { setGraphic(null); return; }
-                HBox h = new HBox(6);
+                if (empty) {
+                    setGraphic(null);
+                    return;
+                }
+                HBox h = new HBox(4);
                 h.setAlignment(Pos.CENTER_LEFT);
                 if (esAdmin) {
                     Usuario u = getTableView().getItems().get(getIndex());
                     boolean esMismo = u.getId() == Session.getInstance().getUsuario().getId();
                     h.getChildren().addAll(btnEdit, btnDesact, btnPasswd);
-                    if (!esMismo) h.getChildren().add(btnElim);
+                    if (!esMismo)
+                        h.getChildren().add(btnElim);
                 } else {
-                    // Solo ve su propio perfil
                     Usuario u = getTableView().getItems().get(getIndex());
                     if (u.getId() == Session.getInstance().getUsuario().getId()) {
                         h.getChildren().add(btnPasswd);
@@ -200,7 +248,7 @@ class UsuariosImpl extends VBox {
                 setGraphic(h);
             }
         });
-        c.setPrefWidth(240);
+        c.setPrefWidth(180);
         tabla.getColumns().add(c);
     }
 
@@ -208,34 +256,53 @@ class UsuariosImpl extends VBox {
     private void cargar() {
         try {
             if (Session.getInstance().isAdmin()) {
-                datos.setAll(ctrl.obtenerTodos());
+                // Mostrar SOLO usuarios activos (ocultar inactivos)
+                List<Usuario> todos = ctrl.obtenerTodos();
+                List<Usuario> activos = todos.stream()
+                        .filter(Usuario::isActivo)
+                        .toList();
+                datos.setAll(activos);
             } else {
                 // Encargado/Cajero solo se ve a sí mismo
                 Usuario yo = ctrl.obtenerUsuario(Session.getInstance().getUsuario().getId());
                 datos.setAll(yo != null ? List.of(yo) : List.of());
             }
-        } catch (Exception e) { UI.mostrarError("Error", e.getMessage()); }
+        } catch (Exception e) {
+            UI.mostrarError("Error", e.getMessage());
+        }
     }
 
     private void filtrar(String q) {
         try {
-            if (q == null || q.isBlank()) { cargar(); return; }
+            if (q == null || q.isBlank()) {
+                cargar();
+                return;
+            }
             String lq = q.toLowerCase();
-            datos.setAll(ctrl.obtenerTodos().stream()
-                .filter(u -> (u.getNombre() + " " + u.getApellido()).toLowerCase().contains(lq)
-                          || u.getUsuario().toLowerCase().contains(lq)
-                          || (u.getEmail() != null && u.getEmail().toLowerCase().contains(lq)))
-                .toList());
-        } catch (Exception ex) { cargar(); }
+            // Filtrar solo sobre usuarios activos
+            List<Usuario> activos = ctrl.obtenerTodos().stream()
+                    .filter(Usuario::isActivo)
+                    .toList();
+            datos.setAll(activos.stream()
+                    .filter(u -> (u.getNombre() + " " + u.getApellido()).toLowerCase().contains(lq)
+                            || u.getUsuario().toLowerCase().contains(lq)
+                            || (u.getEmail() != null && u.getEmail().toLowerCase().contains(lq)))
+                    .toList());
+        } catch (Exception ex) {
+            cargar();
+        }
     }
 
     private void toggleActivo(Usuario u) {
         String acc = u.isActivo() ? "desactivar" : "activar";
-        if (!UI.confirmar("Cambiar estado", "¿Deseas " + acc + " a " + u.getNombre() + "?")) return;
+        if (!UI.confirmar("Cambiar estado", "¿Deseas " + acc + " a " + u.getNombre() + "?"))
+            return;
         u.setActivo(!u.isActivo());
         boolean ok = ctrl.actualizarUsuario(u);
-        if (ok) cargar();
-        else UI.mostrarError("Error", "No se pudo cambiar el estado.");
+        if (ok)
+            cargar();
+        else
+            UI.mostrarError("Error", "No se pudo cambiar el estado.");
     }
 
     // ── Formulario crear/editar usuario ─────────────────────
@@ -252,27 +319,35 @@ class UsuariosImpl extends VBox {
         Label titulo = new Label(editar == null ? "➕ Nuevo usuario" : "✏️ Editar usuario");
         titulo.setFont(Font.font("System", FontWeight.BOLD, 15));
 
-        TextField fNombre   = UI.campo("Nombre");
+        TextField fNombre = UI.campo("Nombre");
         TextField fApellido = UI.campo("Apellido");
-        TextField fEmail    = UI.campo("correo@ejemplo.com");
-        TextField fUsuario  = UI.campo("nombre.usuario");
+        TextField fEmail = UI.campo("correo@ejemplo.com");
+        TextField fUsuario = UI.campo("nombre.usuario");
         PasswordField fPass = UI.campoPassword("Contraseña");
 
         ComboBox<String> comboRol = UI.combo();
         comboRol.getItems().addAll(
-            "1 - Administrador Global",
-            "2 - Encargado de Estacionamiento",
-            "3 - Cajero");
+                "1 - Administrador Global",
+                "2 - Encargado de Estacionamiento",
+                "3 - Cajero");
         comboRol.setValue("3 - Cajero");
 
         // Selector de estacionamiento
         ComboBox<Estacionamiento> comboEst = UI.combo();
         try {
             comboEst.getItems().addAll(estCtrl.obtenerTodosLosEstacionamientos());
-        } catch (Exception ex) { /* sin estacionamientos */ }
+        } catch (Exception ex) {
+            /* sin estacionamientos */ }
         comboEst.setConverter(new javafx.util.StringConverter<Estacionamiento>() {
-            @Override public String toString(Estacionamiento e) { return e != null ? e.getNombre() : ""; }
-            @Override public Estacionamiento fromString(String s) { return null; }
+            @Override
+            public String toString(Estacionamiento e) {
+                return e != null ? e.getNombre() : "";
+            }
+
+            @Override
+            public Estacionamiento fromString(String s) {
+                return null;
+            }
         });
         comboEst.setPromptText("Seleccionar estacionamiento…");
 
@@ -298,8 +373,8 @@ class UsuariosImpl extends VBox {
             cbActivo.setSelected(editar.isActivo());
             if (editar.getEstacionamientoId() != null) {
                 comboEst.getItems().stream()
-                    .filter(est -> est.getId() == editar.getEstacionamientoId())
-                    .findFirst().ifPresent(comboEst::setValue);
+                        .filter(est -> est.getId() == editar.getEstacionamientoId())
+                        .findFirst().ifPresent(comboEst::setValue);
             }
             boolean necesitaEst = editar.getRol() != 1;
             grupoEst.setVisible(necesitaEst);
@@ -310,20 +385,26 @@ class UsuariosImpl extends VBox {
         }
 
         GridPane grid = new GridPane();
-        grid.setHgap(12); grid.setVgap(12);
-        grid.add(UI.grupoCampo("Nombre *",   fNombre),   0, 0);
+        grid.setHgap(12);
+        grid.setVgap(12);
+        grid.add(UI.grupoCampo("Nombre *", fNombre), 0, 0);
         grid.add(UI.grupoCampo("Apellido *", fApellido), 1, 0);
-        grid.add(UI.grupoCampo("Email *",    fEmail),    0, 1);
-        grid.add(UI.grupoCampo("Usuario *",  fUsuario),  1, 1);
+        grid.add(UI.grupoCampo("Email *", fEmail), 0, 1);
+        grid.add(UI.grupoCampo("Usuario *", fUsuario), 1, 1);
         grid.add(UI.grupoCampo("Contraseña" + (editar == null ? " *" : ""), fPass), 0, 2);
-        grid.add(UI.grupoCampo("Rol *",      comboRol),  1, 2);
-        grid.add(grupoEst,                               0, 3, 2, 1);
-        grid.add(cbActivo,                               0, 4, 2, 1);
-        ColumnConstraints cc = new ColumnConstraints(); cc.setPercentWidth(50);
-        grid.getColumnConstraints().addAll(cc, new ColumnConstraints() {{ setPercentWidth(50); }});
+        grid.add(UI.grupoCampo("Rol *", comboRol), 1, 2);
+        grid.add(grupoEst, 0, 3, 2, 1);
+        grid.add(cbActivo, 0, 4, 2, 1);
+        ColumnConstraints cc = new ColumnConstraints();
+        cc.setPercentWidth(50);
+        grid.getColumnConstraints().addAll(cc, new ColumnConstraints() {
+            {
+                setPercentWidth(50);
+            }
+        });
 
         Label err = UI.errorLabel();
-        Button guardar  = UI.btnPrimario(editar == null ? "Crear usuario" : "Actualizar");
+        Button guardar = UI.btnPrimario(editar == null ? "Crear usuario" : "Actualizar");
         Button cancelar = UI.btnSecundario("Cancelar");
         cancelar.setOnAction(e -> ven.close());
 
@@ -351,18 +432,28 @@ class UsuariosImpl extends VBox {
             // Contraseña
             String pass = fPass.getText();
             if (editar == null) {
-                if (pass.isBlank()) { UI.setError(err, "La contraseña es obligatoria para nuevos usuarios."); return; }
+                if (pass.isBlank()) {
+                    UI.setError(err, "La contraseña es obligatoria para nuevos usuarios.");
+                    return;
+                }
                 u.setContrasena(pass);
             } else {
-                if (!pass.isBlank()) u.setContrasena(pass);
+                if (!pass.isBlank())
+                    u.setContrasena(pass);
             }
 
             String error = ctrl.validarUsuario(u);
-            if (error != null && editar == null) { UI.setError(err, error); return; }
+            if (error != null && editar == null) {
+                UI.setError(err, error);
+                return;
+            }
 
             boolean ok = editar == null ? ctrl.crearUsuario(u) : ctrl.actualizarUsuario(u);
-            if (ok) { cargar(); ven.close(); }
-            else UI.setError(err, "Error al guardar. Verifica los datos e intenta de nuevo.");
+            if (ok) {
+                cargar();
+                ven.close();
+            } else
+                UI.setError(err, "Error al guardar. Verifica los datos e intenta de nuevo.");
         });
 
         HBox bRow = new HBox(10, cancelar, guardar);
@@ -383,48 +474,59 @@ class UsuariosImpl extends VBox {
         cont.setPadding(new Insets(24));
         cont.setPrefWidth(380);
 
-        Label titulo = new Label("🔑 Cambiar contraseña — " + u.getNombre());
+        Label titulo = new Label("🔐 Cambiar contraseña — " + u.getNombre());
         titulo.setFont(Font.font("System", FontWeight.BOLD, 14));
 
-        PasswordField fNueva    = UI.campoPassword("Nueva contraseña");
-        PasswordField fConfirm  = UI.campoPassword("Confirmar contraseña");
+        PasswordField fNueva = UI.campoPassword("Nueva contraseña");
+        PasswordField fConfirm = UI.campoPassword("Confirmar contraseña");
 
-        Label err     = UI.errorLabel();
-        Button guardar  = UI.btnPrimario("Cambiar contraseña");
+        Label err = UI.errorLabel();
+        Button guardar = UI.btnPrimario("Cambiar contraseña");
         Button cancelar = UI.btnSecundario("Cancelar");
         cancelar.setOnAction(e -> ven.close());
 
         guardar.setOnAction(e -> {
-            String nueva   = fNueva.getText();
+            String nueva = fNueva.getText();
             String confirm = fConfirm.getText();
-            if (nueva.isBlank()) { UI.setError(err, "La nueva contraseña es obligatoria."); return; }
-            if (nueva.length() < 6) { UI.setError(err, "La contraseña debe tener al menos 6 caracteres."); return; }
-            if (!nueva.equals(confirm)) { UI.setError(err, "Las contraseñas no coinciden."); return; }
+            if (nueva.isBlank()) {
+                UI.setError(err, "La nueva contraseña es obligatoria.");
+                return;
+            }
+            if (nueva.length() < 6) {
+                UI.setError(err, "La contraseña debe tener al menos 6 caracteres.");
+                return;
+            }
+            if (!nueva.equals(confirm)) {
+                UI.setError(err, "Las contraseñas no coinciden.");
+                return;
+            }
 
             u.setContrasena(nueva);
             boolean ok = ctrl.actualizarUsuario(u);
-            if (ok) { UI.mostrarInfo("Éxito", "Contraseña actualizada correctamente."); ven.close(); }
-            else UI.setError(err, "Error al actualizar la contraseña.");
+            if (ok) {
+                UI.mostrarInfo("Éxito", "Contraseña actualizada correctamente.");
+                ven.close();
+            } else
+                UI.setError(err, "Error al actualizar la contraseña.");
         });
 
         HBox bRow = new HBox(10, cancelar, guardar);
         bRow.setAlignment(Pos.CENTER_RIGHT);
         cont.getChildren().addAll(
-            titulo, UI.separador(),
-            UI.grupoCampo("Nueva contraseña *", fNueva),
-            UI.grupoCampo("Confirmar contraseña *", fConfirm),
-            err, UI.separador(), bRow
-        );
+                titulo, UI.separador(),
+                UI.grupoCampo("Nueva contraseña *", fNueva),
+                UI.grupoCampo("Confirmar contraseña *", fConfirm),
+                err, UI.separador(), bRow);
         ven.setScene(new Scene(cont));
         ven.showAndWait();
     }
 }
 
 // ─────────────────────────────────────────────────────────────
-//  CONVENIOS  –  Integración del módulo de convenios en la UI
-//  Requiere que el DAO/Controller de ConvenioRestaurante exista.
-//  Si el equipo aún no lo implementó, la clase muestra un
-//  mensaje de "módulo pendiente de integración" sin romper la app.
+// CONVENIOS – Integración del módulo de convenios en la UI
+// Requiere que el DAO/Controller de ConvenioRestaurante exista.
+// Si el equipo aún no lo implementó, la clase muestra un
+// mensaje de "módulo pendiente de integración" sin romper la app.
 // ─────────────────────────────────────────────────────────────
 class ConveniosImpl extends VBox {
 
@@ -456,7 +558,7 @@ class ConveniosImpl extends VBox {
         btnNuevo.setDisable(convenioCtrl == null);
 
         HBox encabezado = UI.encabezado("Convenios con Restaurantes",
-            "Acuerdos de validación y descuento por consumo", btnNuevo);
+                "Acuerdos de validación y descuento por consumo", btnNuevo);
 
         if (convenioCtrl == null) {
             // Módulo pendiente – mostrar placeholder informativo
@@ -472,11 +574,12 @@ class ConveniosImpl extends VBox {
             msg.setFont(Font.font("System", FontWeight.BOLD, 18));
 
             Label sub = new Label(
-                "Este módulo integra los convenios del restaurante a la interfaz.\n" +
-                "El equipo encargado del ConvenioController debe publicar su implementación.\n\n" +
-                "Cuando esté disponible, aquí aparecerá el listado de convenios con:\n" +
-                "  • Restaurante asociado\n  • Fecha de inicio y fin\n  • Estado (Vigente / Vencido / Cancelado)\n" +
-                "  • Acciones: crear, editar, cancelar");
+                    "Este módulo integra los convenios del restaurante a la interfaz.\n" +
+                            "El equipo encargado del ConvenioController debe publicar su implementación.\n\n" +
+                            "Cuando esté disponible, aquí aparecerá el listado de convenios con:\n" +
+                            "  • Restaurante asociado\n  • Fecha de inicio y fin\n  • Estado (Vigente / Vencido / Cancelado)\n"
+                            +
+                            "  • Acciones: crear, editar, cancelar");
             sub.setStyle("-fx-text-fill:" + UI.MUTED + ";-fx-font-size:13px;");
             sub.setWrapText(true);
             sub.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
@@ -509,7 +612,7 @@ class ConveniosImpl extends VBox {
         colFechas.setCellValueFactory(d -> {
             ConvenioRestaurante c = d.getValue();
             String desde = c.getFechaInicio() != null ? c.getFechaInicio().format(FMT) : "—";
-            String hasta = c.getFechaFin()    != null ? c.getFechaFin().format(FMT)    : "—";
+            String hasta = c.getFechaFin() != null ? c.getFechaFin().format(FMT) : "—";
             return new javafx.beans.property.SimpleStringProperty(desde + " → " + hasta);
         });
         colFechas.setPrefWidth(180);
@@ -518,14 +621,18 @@ class ConveniosImpl extends VBox {
         TableColumn<ConvenioRestaurante, String> colEst = new TableColumn<>("Estado");
         colEst.setCellValueFactory(new PropertyValueFactory<>("estado"));
         colEst.setCellFactory(col -> new TableCell<>() {
-            @Override protected void updateItem(String v, boolean empty) {
+            @Override
+            protected void updateItem(String v, boolean empty) {
                 super.updateItem(v, empty);
-                if (empty || v == null) { setGraphic(null); return; }
+                if (empty || v == null) {
+                    setGraphic(null);
+                    return;
+                }
                 String estilo = switch (v) {
-                    case "Vigente"   -> UI.badgeGreen();
-                    case "Vencido"   -> UI.badgeGray();
+                    case "Vigente" -> UI.badgeGreen();
+                    case "Vencido" -> UI.badgeGray();
                     case "Cancelado" -> UI.badgeRed();
-                    default          -> UI.badgeGray();
+                    default -> UI.badgeGray();
                 };
                 setGraphic(UI.badge(v, estilo));
             }
@@ -535,11 +642,11 @@ class ConveniosImpl extends VBox {
         // Columna acciones
         TableColumn<ConvenioRestaurante, Void> colAcc = new TableColumn<>("Acciones");
         colAcc.setCellFactory(col -> new TableCell<>() {
-            final Button btnEdit   = UI.btnSecundario("✏️ Editar");
+            final Button btnEdit = UI.btnSecundario("✏️ Editar");
             final Button btnCancel = UI.btnPeligro("✖ Cancelar");
             {
-                btnEdit.setStyle(btnEdit.getStyle()   + UI.BTN_SMALL);
-                btnCancel.setStyle(btnCancel.getStyle()+ UI.BTN_SMALL);
+                btnEdit.setStyle(btnEdit.getStyle() + UI.BTN_SMALL);
+                btnCancel.setStyle(btnCancel.getStyle() + UI.BTN_SMALL);
                 btnEdit.setOnAction(e -> formulario(getTableView().getItems().get(getIndex()), datos));
                 btnCancel.setOnAction(e -> {
                     ConvenioRestaurante conv = getTableView().getItems().get(getIndex());
@@ -550,9 +657,14 @@ class ConveniosImpl extends VBox {
                     }
                 });
             }
-            @Override protected void updateItem(Void v, boolean empty) {
+
+            @Override
+            protected void updateItem(Void v, boolean empty) {
                 super.updateItem(v, empty);
-                if (empty) { setGraphic(null); return; }
+                if (empty) {
+                    setGraphic(null);
+                    return;
+                }
                 HBox h = new HBox(6, btnEdit, btnCancel);
                 h.setAlignment(Pos.CENTER_LEFT);
                 setGraphic(h);
@@ -573,11 +685,14 @@ class ConveniosImpl extends VBox {
         try {
             Session s = Session.getInstance();
             Integer estId = s.getEstacionamientoActualId();
-            if (estId == null) { datos.clear(); return; }
+            if (estId == null) {
+                datos.clear();
+                return;
+            }
 
             // Llamada reflectiva al método obtenerPorEstacionamiento(int)
             java.lang.reflect.Method m = convenioCtrl.getClass()
-                .getMethod("obtenerPorEstacionamiento", int.class);
+                    .getMethod("obtenerPorEstacionamiento", int.class);
             @SuppressWarnings("unchecked")
             List<ConvenioRestaurante> lista = (List<ConvenioRestaurante>) m.invoke(convenioCtrl, estId);
             datos.setAll(lista);
@@ -589,7 +704,7 @@ class ConveniosImpl extends VBox {
     private void llamarActualizar(ConvenioRestaurante conv) {
         try {
             java.lang.reflect.Method m = convenioCtrl.getClass()
-                .getMethod("actualizarConvenio", ConvenioRestaurante.class);
+                    .getMethod("actualizarConvenio", ConvenioRestaurante.class);
             m.invoke(convenioCtrl, conv);
         } catch (Exception ex) {
             UI.mostrarError("Error", "No se pudo actualizar: " + ex.getMessage());
@@ -610,10 +725,10 @@ class ConveniosImpl extends VBox {
         titulo.setFont(Font.font("System", FontWeight.BOLD, 15));
 
         TextField fRestId = UI.campo("ID del restaurante");
-        TextField fDesc   = UI.campo("Descripción del convenio");
+        TextField fDesc = UI.campo("Descripción del convenio");
 
         DatePicker dpInicio = new DatePicker(LocalDate.now());
-        DatePicker dpFin    = new DatePicker(LocalDate.now().plusYears(1));
+        DatePicker dpFin = new DatePicker(LocalDate.now().plusYears(1));
         dpInicio.setMaxWidth(Double.MAX_VALUE);
         dpFin.setMaxWidth(Double.MAX_VALUE);
         dpInicio.setStyle(UI.FIELD);
@@ -626,23 +741,32 @@ class ConveniosImpl extends VBox {
         if (editar != null) {
             fRestId.setText(String.valueOf(editar.getRestauranteId()));
             fDesc.setText(editar.getDescripcion());
-            if (editar.getFechaInicio() != null) dpInicio.setValue(editar.getFechaInicio().toLocalDate());
-            if (editar.getFechaFin()    != null) dpFin.setValue(editar.getFechaFin().toLocalDate());
-            if (editar.getEstado() != null) comboEstado.setValue(editar.getEstado());
+            if (editar.getFechaInicio() != null)
+                dpInicio.setValue(editar.getFechaInicio().toLocalDate());
+            if (editar.getFechaFin() != null)
+                dpFin.setValue(editar.getFechaFin().toLocalDate());
+            if (editar.getEstado() != null)
+                comboEstado.setValue(editar.getEstado());
         }
 
         GridPane grid = new GridPane();
-        grid.setHgap(12); grid.setVgap(12);
+        grid.setHgap(12);
+        grid.setVgap(12);
         grid.add(UI.grupoCampo("ID Restaurante *", fRestId), 0, 0);
-        grid.add(UI.grupoCampo("Estado",           comboEstado), 1, 0);
-        grid.add(UI.grupoCampo("Descripción *",    fDesc),    0, 1, 2, 1);
-        grid.add(UI.grupoCampo("Fecha inicio",     dpInicio), 0, 2);
-        grid.add(UI.grupoCampo("Fecha fin",        dpFin),    1, 2);
-        ColumnConstraints cc = new ColumnConstraints(); cc.setPercentWidth(50);
-        grid.getColumnConstraints().addAll(cc, new ColumnConstraints() {{ setPercentWidth(50); }});
+        grid.add(UI.grupoCampo("Estado", comboEstado), 1, 0);
+        grid.add(UI.grupoCampo("Descripción *", fDesc), 0, 1, 2, 1);
+        grid.add(UI.grupoCampo("Fecha inicio", dpInicio), 0, 2);
+        grid.add(UI.grupoCampo("Fecha fin", dpFin), 1, 2);
+        ColumnConstraints cc = new ColumnConstraints();
+        cc.setPercentWidth(50);
+        grid.getColumnConstraints().addAll(cc, new ColumnConstraints() {
+            {
+                setPercentWidth(50);
+            }
+        });
 
-        Label err     = UI.errorLabel();
-        Button guardar  = UI.btnPrimario(editar == null ? "Guardar" : "Actualizar");
+        Label err = UI.errorLabel();
+        Button guardar = UI.btnPrimario(editar == null ? "Guardar" : "Actualizar");
         Button cancelar = UI.btnSecundario("Cancelar");
         cancelar.setOnAction(e -> ven.close());
 
@@ -650,11 +774,17 @@ class ConveniosImpl extends VBox {
             try {
                 int restId = Integer.parseInt(fRestId.getText().trim());
                 String desc = fDesc.getText().trim();
-                if (desc.isBlank()) { UI.setError(err, "La descripción es obligatoria."); return; }
+                if (desc.isBlank()) {
+                    UI.setError(err, "La descripción es obligatoria.");
+                    return;
+                }
 
                 Session s = Session.getInstance();
                 Integer estId = s.getEstacionamientoActualId();
-                if (estId == null) { UI.setError(err, "Debe seleccionar un estacionamiento."); return; }
+                if (estId == null) {
+                    UI.setError(err, "Debe seleccionar un estacionamiento.");
+                    return;
+                }
 
                 ConvenioRestaurante conv = editar != null ? editar : new ConvenioRestaurante();
                 conv.setRestauranteId(restId);
@@ -666,10 +796,13 @@ class ConveniosImpl extends VBox {
 
                 if (editar == null) {
                     java.lang.reflect.Method m = convenioCtrl.getClass()
-                        .getMethod("crearConvenio", ConvenioRestaurante.class);
+                            .getMethod("crearConvenio", ConvenioRestaurante.class);
                     boolean ok = (boolean) m.invoke(convenioCtrl, conv);
-                    if (ok) { refrescar(datos); ven.close(); }
-                    else UI.setError(err, "Error al guardar.");
+                    if (ok) {
+                        refrescar(datos);
+                        ven.close();
+                    } else
+                        UI.setError(err, "Error al guardar.");
                 } else {
                     llamarActualizar(conv);
                     refrescar(datos);
@@ -691,8 +824,10 @@ class ConveniosImpl extends VBox {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  CONVENIOS MODULE  –  Punto de entrada público
+// CONVENIOS MODULE – Punto de entrada público
 // ─────────────────────────────────────────────────────────────
 class ConveniosModule extends ConveniosImpl {
-    public ConveniosModule() { super(); }
+    public ConveniosModule() {
+        super();
+    }
 }

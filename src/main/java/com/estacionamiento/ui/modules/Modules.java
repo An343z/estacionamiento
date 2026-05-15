@@ -1857,6 +1857,7 @@ private void generarReporteExcelPensiones(){
     }
 }
 
+
 private void generarPdfAnio(){
 
     String ruta =
