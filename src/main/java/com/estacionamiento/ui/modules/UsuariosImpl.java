@@ -80,6 +80,7 @@ class UsuariosImpl extends VBox {
 
         tabla = new TableView<>();
         UI.estilizarTabla(tabla);
+        tabla.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         datos = FXCollections.observableArrayList();
         tabla.setItems(datos);
 
@@ -94,12 +95,13 @@ class UsuariosImpl extends VBox {
 
         tabla.setPlaceholder(UI.panelVacio("👥", "No hay empleados para mostrar"));
 
-        // Envolver tabla en ScrollPane para mejor experiencia en pantallas pequeñas
+        // Envolver tabla en ScrollPane para permitir desplazamiento horizontal
         ScrollPane scrollTabla = new ScrollPane(tabla);
-        scrollTabla.setFitToWidth(true);
+        scrollTabla.setFitToWidth(false);
         scrollTabla.setFitToHeight(true);
         scrollTabla.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         scrollTabla.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollTabla.setPannable(true);
         scrollTabla.setStyle("-fx-background-color:transparent;");
         VBox.setVgrow(scrollTabla, Priority.ALWAYS);
 
@@ -203,19 +205,23 @@ class UsuariosImpl extends VBox {
             final Button btnEdit = UI.btnSecundario("Editar");
             final Button btnToggle = UI.btnSecundario("Estado");
             final Button btnPasswd = UI.btnSecundario("Pass");
+            final Button btnDelete = UI.btnPeligro("Borrar");
             {
                 btnEdit.setStyle(btnEdit.getStyle() + UI.BTN_SMALL);
                 btnToggle.setStyle(btnToggle.getStyle() + UI.BTN_SMALL);
                 btnPasswd.setStyle(btnPasswd.getStyle() + UI.BTN_SMALL);
+                btnDelete.setStyle(btnDelete.getStyle() + UI.BTN_SMALL);
 
                 // Tooltips explicativos
                 btnEdit.setTooltip(new Tooltip("Editar empleado"));
                 btnToggle.setTooltip(new Tooltip("Activar o desactivar empleado"));
                 btnPasswd.setTooltip(new Tooltip("Cambiar contraseña"));
+                btnDelete.setTooltip(new Tooltip("Eliminar empleado"));
 
                 btnEdit.setOnAction(e -> formularioUsuario(getTableView().getItems().get(getIndex())));
                 btnToggle.setOnAction(e -> toggleActivo(getTableView().getItems().get(getIndex())));
                 btnPasswd.setOnAction(e -> formularioCambiarPassword(getTableView().getItems().get(getIndex())));
+                btnDelete.setOnAction(e -> eliminarUsuario(getTableView().getItems().get(getIndex())));
             }
 
             @Override
@@ -225,7 +231,7 @@ class UsuariosImpl extends VBox {
                     setGraphic(null);
                     return;
                 }
-                HBox h = new HBox(6);
+                HBox h = new HBox(4);
                 h.setAlignment(Pos.CENTER_LEFT);
                 Usuario u = getTableView().getItems().get(getIndex());
                 btnToggle.setText(u.isActivo() ? "Desactivar" : "Activar");
@@ -233,11 +239,10 @@ class UsuariosImpl extends VBox {
                 if (esAdmin) {
                     boolean esMismo = u.getId() == Session.getInstance().getUsuario().getId();
                     h.getChildren().addAll(btnEdit, btnToggle, btnPasswd);
-                    if (esMismo) {
-                        // Evitar editar rol/estado del propio usuario sin cerrar sesión
-                        btnToggle.setDisable(true);
+                    if (!esMismo) {
+                        h.getChildren().add(btnDelete);
                     } else {
-                        btnToggle.setDisable(false);
+                        btnToggle.setDisable(true);
                     }
                 } else {
                     if (u.getId() == Session.getInstance().getUsuario().getId()) {
@@ -247,7 +252,7 @@ class UsuariosImpl extends VBox {
                 setGraphic(h);
             }
         });
-        c.setPrefWidth(220);
+        c.setPrefWidth(280);
         tabla.getColumns().add(c);
     }
 
@@ -319,6 +324,19 @@ class UsuariosImpl extends VBox {
             UI.mostrarInfo("Estado actualizado", "El empleado ha sido " + (u.isActivo() ? "activado" : "desactivado") + " correctamente.");
         } else {
             UI.mostrarError("Error", "No se pudo cambiar el estado.");
+        }
+    }
+
+    private void eliminarUsuario(Usuario u) {
+        if (!UI.confirmar("Eliminar empleado", "¿Estás seguro de eliminar a " + u.getNombre() + " " + u.getApellido() + "?"))
+            return;
+
+        boolean ok = ctrl.eliminarUsuario(u.getId());
+        if (ok) {
+            cargar();
+            UI.mostrarInfo("Empleado eliminado", "El empleado fue eliminado correctamente.");
+        } else {
+            UI.mostrarError("Error", "No se pudo eliminar el empleado.");
         }
     }
 
