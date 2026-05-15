@@ -1,5 +1,9 @@
 package com.estacionamiento.ui.modules;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 import com.estacionamiento.controladores.*;
 import com.estacionamiento.modelos.*;
 import com.estacionamiento.ui.Session;
@@ -19,8 +23,6 @@ import javafx.stage.Stage;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
-import java.util.List;
 
 // ─────────────────────────────────────────────────────────────
 //  USUARIOS
@@ -68,7 +70,7 @@ class UsuariosImpl extends VBox {
 
         filtroEstado = UI.combo();
         filtroEstado.getItems().addAll("Todos", "Activos", "Inactivos");
-        filtroEstado.setValue("Todos");
+        filtroEstado.setValue("Activos"); // ✅ CAMBIO: Por defecto mostrar SOLO ACTIVOS
         filtroEstado.valueProperty().addListener((o, a, n) -> aplicarFiltro());
 
         btnRefrescar = UI.btnSecundario("⟳ Refrescar");
@@ -112,7 +114,6 @@ class UsuariosImpl extends VBox {
                 scrollTabla);
     }
 
-
     // ── Columnas helper ──────────────────────────────────────
     private void col(String name, String prop, double w) {
         TableColumn<Usuario, ?> c = new TableColumn<>(name);
@@ -135,9 +136,8 @@ class UsuariosImpl extends VBox {
             String rolCompleto = ctrl.obtenerDescripcionRol(d.getValue().getRol());
             // ✅ Acortar texto para que quepa mejor
             return new javafx.beans.property.SimpleStringProperty(
-                rolCompleto.replace("Encargado de Estacionamiento", "Encargado")
-                           .replace("Administrador Global", "Admin Global")
-            );
+                    rolCompleto.replace("Encargado de Estacionamiento", "Encargado")
+                            .replace("Administrador Global", "Admin Global"));
         });
         c.setCellFactory(col -> new TableCell<>() {
             @Override
@@ -149,13 +149,13 @@ class UsuariosImpl extends VBox {
                 }
                 String estilo = switch (v) {
                     case "Admin Global" -> UI.badgeBlue();
-                    case "Encargado"    -> UI.badgeAmber();
-                    default             -> UI.badgeGray();
+                    case "Encargado" -> UI.badgeAmber();
+                    default -> UI.badgeGray();
                 };
                 setGraphic(UI.badge(v, estilo));
             }
         });
-        c.setPrefWidth(110);  // ✅ Más angosto porque el texto es corto
+        c.setPrefWidth(110);
         tabla.getColumns().add(c);
     }
 
@@ -163,12 +163,11 @@ class UsuariosImpl extends VBox {
         TableColumn<Usuario, String> c = new TableColumn<>("Estacionamiento");
         c.setCellValueFactory(d -> {
             Usuario u = d.getValue();
-            // Admin Global muestra "—" en lugar de "Sin estacionamiento"
+            // Admin Global muestra "—"
             if (u.getRol() == 1) {
                 return new javafx.beans.property.SimpleStringProperty("—");
             }
             String nom = u.getNombreEstacionamiento();
-            // ✅ Acortar si es muy largo
             if (nom != null && nom.length() > 20) {
                 nom = nom.substring(0, 18) + "…";
             }
@@ -212,7 +211,6 @@ class UsuariosImpl extends VBox {
                 btnPasswd.setStyle(btnPasswd.getStyle() + UI.BTN_SMALL);
                 btnDelete.setStyle(btnDelete.getStyle() + UI.BTN_SMALL);
 
-                // Tooltips explicativos
                 btnEdit.setTooltip(new Tooltip("Editar empleado"));
                 btnToggle.setTooltip(new Tooltip("Activar o desactivar empleado"));
                 btnPasswd.setTooltip(new Tooltip("Cambiar contraseña"));
@@ -280,32 +278,56 @@ class UsuariosImpl extends VBox {
             String estado = filtroEstado.getValue();
             String rol = filtroRol.getValue();
 
-            List<Usuario> base = Session.getInstance().isAdmin() ? ctrl.obtenerTodos() : datos;
+            List<Usuario> base = Session.getInstance().isAdmin() ? ctrl.obtenerTodos() : new ArrayList<>(datos);
 
             List<Usuario> filtrados = base.stream()
                     .filter(u -> {
-                        if (estado != null && !estado.equals("Todos")) {
-                            if (estado.equals("Activos") && !u.isActivo()) return false;
-                            if (estado.equals("Inactivos") && u.isActivo()) return false;
+                        if (estado != null) {
+                            if (estado.equals("Activos") && !u.isActivo())
+                                return false;
+                            if (estado.equals("Inactivos") && u.isActivo())
+                                return false;
                         }
                         if (rol != null && !rol.equals("Todos los roles")) {
-                            if (rol.equals("Administrador Global") && u.getRol() != 1) return false;
-                            if (rol.equals("Encargado") && u.getRol() != 2) return false;
-                            if (rol.equals("Cajero") && u.getRol() != 3) return false;
+                            if (rol.equals("Administrador Global") && u.getRol() != 1)
+                                return false;
+                            if (rol.equals("Encargado") && u.getRol() != 2)
+                                return false;
+                            if (rol.equals("Cajero") && u.getRol() != 3)
+                                return false;
                         }
-                        if (q == null || q.isBlank()) return true;
-                        String lq = q.toLowerCase();
+                        if (q == null || q.isBlank())
+                            return true;
+
+                        String textoBusqueda = q;
+                        String emailUsuario = u.getEmail();
+
+                        // 🔍 Búsqueda específica para emails (cuando contiene @)
+                        if (textoBusqueda.contains("@")) {
+                            if (emailUsuario == null)
+                                return false;
+                            // ✅ Coincidencia si el email EMPIEZA con el texto buscado
+                            // Ej: "A@" -> solo emails que empiezan con "A@"
+                            // "A@gmail.com" -> solo el que empieza exactamente así
+                            return emailUsuario.toLowerCase().startsWith(textoBusqueda.toLowerCase())
+                                    || emailUsuario.equalsIgnoreCase(textoBusqueda);
+                        }
+
+                        // 🔍 Búsqueda normal para cualquier otro texto
+                        String lq = textoBusqueda.toLowerCase();
                         String nombreCompleto = (u.getNombre() + " " + u.getApellido()).toLowerCase();
-                        String estacionamiento = u.getNombreEstacionamiento() != null ? u.getNombreEstacionamiento().toLowerCase() : "";
-                        String rolText = ctrl.obtenerDescripcionRol(u.getRol()).toLowerCase();
+                        String estacionamiento = u.getNombreEstacionamiento() != null
+                                ? u.getNombreEstacionamiento().toLowerCase()
+                                : "";
+                        String rolTexto = ctrl.obtenerDescripcionRol(u.getRol()).toLowerCase();
+
                         return nombreCompleto.contains(lq)
                                 || u.getUsuario().toLowerCase().contains(lq)
-                                || (u.getEmail() != null && u.getEmail().toLowerCase().contains(lq))
+                                || (emailUsuario != null && emailUsuario.toLowerCase().contains(lq))
                                 || estacionamiento.contains(lq)
-                                || rolText.contains(lq)
-                                || (u.isActivo() ? "activo" : "inactivo").contains(lq);
+                                || rolTexto.contains(lq);
                     })
-                    .toList();
+                    .collect(Collectors.toList());
 
             datos.setAll(filtrados);
         } catch (Exception ex) {
@@ -321,14 +343,16 @@ class UsuariosImpl extends VBox {
         boolean ok = ctrl.actualizarUsuario(u);
         if (ok) {
             cargar();
-            UI.mostrarInfo("Estado actualizado", "El empleado ha sido " + (u.isActivo() ? "activado" : "desactivado") + " correctamente.");
+            UI.mostrarInfo("Estado actualizado",
+                    "El empleado ha sido " + (u.isActivo() ? "activado" : "desactivado") + " correctamente.");
         } else {
             UI.mostrarError("Error", "No se pudo cambiar el estado.");
         }
     }
 
     private void eliminarUsuario(Usuario u) {
-        if (!UI.confirmar("Eliminar empleado", "¿Estás seguro de eliminar a " + u.getNombre() + " " + u.getApellido() + "?"))
+        if (!UI.confirmar("Eliminar empleado",
+                "¿Estás seguro de eliminar a " + u.getNombre() + " " + u.getApellido() + "?"))
             return;
 
         boolean ok = ctrl.eliminarUsuario(u.getId());
@@ -451,12 +475,10 @@ class UsuariosImpl extends VBox {
             u.setUsuario(fUsuario.getText().trim());
             u.setActivo(cbActivo.isSelected());
 
-            // Extraer número de rol
             String rolStr = comboRol.getValue();
             int rol = rolStr != null && !rolStr.isBlank() ? Integer.parseInt(rolStr.substring(0, 1)) : 0;
             u.setRol(rol);
 
-            // Estacionamiento
             if (rol == 1) {
                 u.setEstacionamientoId(null);
             } else {
@@ -464,7 +486,6 @@ class UsuariosImpl extends VBox {
                 u.setEstacionamientoId(sel != null ? sel.getId() : null);
             }
 
-            // Contraseña
             String pass = fPass.getText();
             if (editar == null) {
                 if (pass.isBlank()) {
@@ -487,7 +508,8 @@ class UsuariosImpl extends VBox {
             if (ok) {
                 cargar();
                 ven.close();
-                UI.mostrarInfo("Éxito", editar == null ? "Empleado creado correctamente." : "Empleado actualizado correctamente.");
+                UI.mostrarInfo("Éxito",
+                        editar == null ? "Empleado creado correctamente." : "Empleado actualizado correctamente.");
             } else {
                 UI.setError(err, "Error al guardar. Verifica los datos e intenta de nuevo.");
             }
