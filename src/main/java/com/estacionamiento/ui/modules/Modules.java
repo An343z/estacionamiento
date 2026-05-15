@@ -1459,6 +1459,30 @@ generadorExcel = new GeneradorExcel(
     HBox botones = new HBox(12);
     botones.setAlignment(Pos.CENTER_LEFT);
 
+    Button btnPdfOcupacion = new Button("PDF Ocupacion");
+    btnPdfOcupacion.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    btnPdfOcupacion.setOnAction(e -> generarReportePdfOcupacion());
+
+    Button btnPdfIngresos = new Button("PDF Ingresos");
+    btnPdfIngresos.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    btnPdfIngresos.setOnAction(e -> generarReportePdfIngresos());
+
+    Button btnPdfPensiones = new Button("PDF Pensiones");
+    btnPdfPensiones.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    btnPdfPensiones.setOnAction(e -> generarReportePdfPensiones());
+
+    Button btnExcelOcupacion = new Button("Excel Ocupacion");
+    btnExcelOcupacion.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    btnExcelOcupacion.setOnAction(e -> generarReporteExcelOcupacion());
+
+    Button btnExcelIngresos = new Button("Excel Ingresos");
+    btnExcelIngresos.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    btnExcelIngresos.setOnAction(e -> generarReporteExcelIngresos());
+
+    Button btnExcelPensiones = new Button("Excel Pensiones");
+    btnExcelPensiones.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    btnExcelPensiones.setOnAction(e -> generarReporteExcelPensiones());
+
     // =========================
     // PDF
     // =========================
@@ -1496,6 +1520,12 @@ generadorExcel = new GeneradorExcel(
     btnExcelCompleto.setOnAction(e -> generarExcelCompleto());
 
     botones.getChildren().addAll(
+            btnPdfOcupacion,
+            btnPdfIngresos,
+            btnPdfPensiones,
+            btnExcelOcupacion,
+            btnExcelIngresos,
+            btnExcelPensiones,
             btnPdfDia,
             btnPdfMes,
             btnPdfAnio,
@@ -1522,13 +1552,30 @@ generadorExcel = new GeneradorExcel(
             "Guardar " + tipo + " en..."
     );
 
-    chooser.setInitialDirectory(
+    File initialDir =
             new File(
                     System.getProperty("user.home")
                     + File.separator
-                    + "Downloads"
-            )
-    );
+                    + "Descargas"
+            );
+
+    if(!initialDir.exists()){
+        initialDir =
+                new File(
+                        System.getProperty("user.home")
+                        + File.separator
+                        + "Downloads"
+                );
+    }
+
+    if(!initialDir.exists()){
+        initialDir =
+                new File(
+                        System.getProperty("user.home")
+                );
+    }
+
+    chooser.setInitialDirectory(initialDir);
 
     File carpeta =
             chooser.showDialog(null);
@@ -1612,6 +1659,203 @@ private void generarPdfMes(){
     }
 }
 
+
+private Integer estacionamientoReporteActual(){
+    Session s =
+            Session.getInstance();
+
+    Integer estId =
+            s.getEstacionamientoActualId();
+
+    if(estId == null){
+        estId =
+                s.getEstacionamientoId();
+    }
+
+    if(estId == null){
+        UI.mostrarError(
+                "Reportes",
+                "Seleccione un estacionamiento para generar el reporte"
+        );
+    }
+
+    return estId;
+}
+
+private void generarReportePdfOcupacion(){
+    String ruta =
+            seleccionarCarpetaGuardado("PDF Ocupacion");
+
+    Integer estId =
+            estacionamientoReporteActual();
+
+    if(ruta == null || estId == null) return;
+
+    try{
+        GeneradorPDF gen =
+                new GeneradorPDF(
+                        ruta,
+                        ConexionDB.getInstancia().getConexion()
+                );
+
+        boolean ok =
+                gen.generarReporteOcupacion(estId);
+
+        UI.mostrarInfo(
+                "PDF",
+                ok ? "Reporte generado correctamente" : "Error al generar PDF"
+        );
+    }catch(Exception e){
+        UI.mostrarError("Error", e.getMessage());
+    }
+}
+
+private void generarReportePdfIngresos(){
+    String ruta =
+            seleccionarCarpetaGuardado("PDF Ingresos");
+
+    Integer estId =
+            estacionamientoReporteActual();
+
+    if(ruta == null || estId == null) return;
+
+    try{
+        GeneradorPDF gen =
+                new GeneradorPDF(
+                        ruta,
+                        ConexionDB.getInstancia().getConexion()
+                );
+
+        boolean ok =
+                gen.generarReporteIngresos(
+                        estId,
+                        LocalDate.now()
+                );
+
+        UI.mostrarInfo(
+                "PDF",
+                ok ? "Reporte generado correctamente" : "Error al generar PDF"
+        );
+    }catch(Exception e){
+        UI.mostrarError("Error", e.getMessage());
+    }
+}
+
+private void generarReportePdfPensiones(){
+    String ruta =
+            seleccionarCarpetaGuardado("PDF Pensiones");
+
+    Integer estId =
+            estacionamientoReporteActual();
+
+    if(ruta == null || estId == null) return;
+
+    try{
+        GeneradorPDF gen =
+                new GeneradorPDF(
+                        ruta,
+                        ConexionDB.getInstancia().getConexion()
+                );
+
+        boolean ok =
+                gen.generarReportePensiones(estId);
+
+        UI.mostrarInfo(
+                "PDF",
+                ok ? "Reporte generado correctamente" : "Error al generar PDF"
+        );
+    }catch(Exception e){
+        UI.mostrarError("Error", e.getMessage());
+    }
+}
+
+private void generarReporteExcelOcupacion(){
+    String ruta =
+            seleccionarCarpetaGuardado("Excel Ocupacion");
+
+    Integer estId =
+            estacionamientoReporteActual();
+
+    if(ruta == null || estId == null) return;
+
+    try{
+        GeneradorExcel gen =
+                new GeneradorExcel(
+                        ruta,
+                        ConexionDB.getInstancia().getConexion()
+                );
+
+        boolean ok =
+                gen.generarReporteOcupacionBD(estId);
+
+        UI.mostrarInfo(
+                "Excel",
+                ok ? "Reporte generado correctamente" : "Error al generar Excel"
+        );
+    }catch(Exception e){
+        UI.mostrarError("Error", e.getMessage());
+    }
+}
+
+private void generarReporteExcelIngresos(){
+    String ruta =
+            seleccionarCarpetaGuardado("Excel Ingresos");
+
+    Integer estId =
+            estacionamientoReporteActual();
+
+    if(ruta == null || estId == null) return;
+
+    try{
+        GeneradorExcel gen =
+                new GeneradorExcel(
+                        ruta,
+                        ConexionDB.getInstancia().getConexion()
+                );
+
+        boolean ok =
+                gen.generarReporteIngresosBD(
+                        estId,
+                        LocalDate.now(),
+                        LocalDate.now()
+                );
+
+        UI.mostrarInfo(
+                "Excel",
+                ok ? "Reporte generado correctamente" : "Error al generar Excel"
+        );
+    }catch(Exception e){
+        UI.mostrarError("Error", e.getMessage());
+    }
+}
+
+private void generarReporteExcelPensiones(){
+    String ruta =
+            seleccionarCarpetaGuardado("Excel Pensiones");
+
+    Integer estId =
+            estacionamientoReporteActual();
+
+    if(ruta == null || estId == null) return;
+
+    try{
+        GeneradorExcel gen =
+                new GeneradorExcel(
+                        ruta,
+                        ConexionDB.getInstancia().getConexion()
+                );
+
+        boolean ok =
+                gen.generarReportePensionBD(estId);
+
+        UI.mostrarInfo(
+                "Excel",
+                ok ? "Reporte generado correctamente" : "Error al generar Excel"
+        );
+    }catch(Exception e){
+        UI.mostrarError("Error", e.getMessage());
+    }
+}
 
 private void generarPdfAnio(){
 
