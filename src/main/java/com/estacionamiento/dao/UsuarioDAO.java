@@ -1,11 +1,17 @@
 package com.estacionamiento.dao;
 
-import com.estacionamiento.api.UsuarioApi;
-import com.estacionamiento.modelos.Usuario;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.estacionamiento.api.UsuarioApi;
+import com.estacionamiento.modelos.Usuario;
 
 /**
  * DAO (Data Access Object) para la tabla de Usuarios
@@ -158,25 +164,26 @@ public class UsuarioDAO {
      */
     public boolean actualizar(Usuario usuario) {
         String sql = "UPDATE usuarios SET nombre = ?, apellido = ?, email = ?, usuario = ?, " +
-                     "rol = ?, estacionamiento_id = ?, activo = ?, fecha_modificacion = ? WHERE id = ?";
+                     "contrasena = ?, rol = ?, estacionamiento_id = ?, activo = ?, fecha_modificacion = ? WHERE id = ?";
         
         try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
             pstmt.setString(1, usuario.getNombre());
             pstmt.setString(2, usuario.getApellido());
             pstmt.setString(3, usuario.getEmail());
             pstmt.setString(4, usuario.getUsuario());
-            pstmt.setInt(5, usuario.getRol());
+            pstmt.setString(5, usuario.getContrasena());
+            pstmt.setInt(6, usuario.getRol());
             
             // Manejar estacionamientoId (puede ser NULL)
             if (usuario.getEstacionamientoId() != null) {
-                pstmt.setInt(6, usuario.getEstacionamientoId());
+                pstmt.setInt(7, usuario.getEstacionamientoId());
             } else {
-                pstmt.setNull(6, java.sql.Types.INTEGER);
+                pstmt.setNull(7, java.sql.Types.INTEGER);
             }
             
-            pstmt.setBoolean(7, usuario.isActivo());
-            pstmt.setTimestamp(8, Timestamp.valueOf(LocalDateTime.now()));
-            pstmt.setInt(9, usuario.getId());
+            pstmt.setBoolean(8, usuario.isActivo());
+            pstmt.setTimestamp(9, Timestamp.valueOf(LocalDateTime.now()));
+            pstmt.setInt(10, usuario.getId());
             
             pstmt.executeUpdate();
             return true;

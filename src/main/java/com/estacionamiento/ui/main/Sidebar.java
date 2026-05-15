@@ -3,6 +3,7 @@ package com.estacionamiento.ui.main;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+
 import com.estacionamiento.controladores.EstacionamientoController;
 import com.estacionamiento.modelos.Estacionamiento;
 import com.estacionamiento.ui.Session;
@@ -40,7 +41,7 @@ public class Sidebar extends VBox {
         PRECIOS("💵", "Precios", "Servicios"),
         PROMOCIONES("🎫", "Promociones", "Servicios"),
         CORREO_RECORDATORIO("✉️", "Recordatorio Email", "Servicios"),
-        USUARIOS("👥", "Usuarios", "Sistema"),
+        USUARIOS("👥", "Empleados", "Sistema"),
         NOTIFICACIONES("🔔", "Notificaciones", "Sistema"),
         REPORTES("📈", "Reportes", "Sistema"),
         CONFIGURACION("⚙️", "Configuración", "Sistema");

@@ -18,8 +18,8 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 
 // ─────────────────────────────────────────────────────────────
@@ -38,8 +38,9 @@ class UsuariosImpl extends VBox {
     private ObservableList<Usuario> datos;
     private TableView<Usuario> tabla;
     private TextField busqueda;
-
-    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private ComboBox<String> filtroEstado;
+    private ComboBox<String> filtroRol;
+    private Button btnRefrescar;
 
     UsuariosImpl() {
         setPadding(new Insets(24, 28, 24, 28));
@@ -52,22 +53,36 @@ class UsuariosImpl extends VBox {
     // ── Construcción principal ────────────────────────────────
     private void construir() {
         // Sólo el admin puede crear / editar usuarios
-        Button btnNuevo = UI.btnPrimario("+ Nuevo usuario");
+        Button btnNuevo = UI.btnPrimario("+ Nuevo empleado");
         btnNuevo.setOnAction(e -> formularioUsuario(null));
         btnNuevo.setVisible(Session.getInstance().isAdmin());
         btnNuevo.setManaged(Session.getInstance().isAdmin());
 
-        busqueda = UI.campo("🔍  Buscar por nombre, usuario o email…");
-        busqueda.textProperty().addListener((o, a, n) -> filtrar(n));
+        busqueda = UI.campo("🔍  Buscar por nombre, usuario, rol, estacionamiento o email…");
+        busqueda.textProperty().addListener((o, a, n) -> aplicarFiltro());
+
+        filtroRol = UI.combo();
+        filtroRol.getItems().addAll("Todos los roles", "Administrador Global", "Encargado", "Cajero");
+        filtroRol.setValue("Todos los roles");
+        filtroRol.valueProperty().addListener((o, a, n) -> aplicarFiltro());
+
+        filtroEstado = UI.combo();
+        filtroEstado.getItems().addAll("Todos", "Activos", "Inactivos");
+        filtroEstado.setValue("Todos");
+        filtroEstado.valueProperty().addListener((o, a, n) -> aplicarFiltro());
+
+        btnRefrescar = UI.btnSecundario("⟳ Refrescar");
+        btnRefrescar.setOnAction(e -> cargar());
+
+        HBox barraFiltros = new HBox(10, busqueda, filtroRol, filtroEstado, btnRefrescar);
+        barraFiltros.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(busqueda, Priority.ALWAYS);
 
         tabla = new TableView<>();
         UI.estilizarTabla(tabla);
         datos = FXCollections.observableArrayList();
         tabla.setItems(datos);
-        
-        // ✅ PERMITIR DESPLAZAMIENTO HORIZONTAL
-        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        
+
         // Columnas con anchos fijos
         colStr("Nombre", u -> u.getNombre() + " " + u.getApellido(), 180);
         col("Usuario", "usuario", 130);
@@ -77,9 +92,9 @@ class UsuariosImpl extends VBox {
         colEstado();
         colAcciones();
 
-        tabla.setPlaceholder(UI.panelVacio("👤", "No hay usuarios"));
-        
-        // ✅ ENVOLVER TABLA EN SCROLLPANE PARA DESPLAZAMIENTO HORIZONTAL
+        tabla.setPlaceholder(UI.panelVacio("👥", "No hay empleados para mostrar"));
+
+        // Envolver tabla en ScrollPane para mejor experiencia en pantallas pequeñas
         ScrollPane scrollTabla = new ScrollPane(tabla);
         scrollTabla.setFitToWidth(true);
         scrollTabla.setFitToHeight(true);
@@ -89,29 +104,12 @@ class UsuariosImpl extends VBox {
         VBox.setVgrow(scrollTabla, Priority.ALWAYS);
 
         getChildren().addAll(
-                UI.encabezado("Gestión de Usuarios",
-                        "Administración de cuentas del sistema", btnNuevo),
-                busqueda,
-                scrollTabla);  // ← Usar ScrollPane en lugar de tabla directa
+                UI.encabezado("Gestión de Empleados",
+                        "Lista de empleados y control de accesos", btnNuevo),
+                barraFiltros,
+                scrollTabla);
     }
 
-    private void eliminarUsuario(Usuario u) {
-        if (!UI.confirmar("Eliminar usuario",
-                "¿Eliminar permanentemente a " + u.getNombre() + " " + u.getApellido() + "?\n" +
-                        "Esta acción NO se puede deshacer."))
-            return;
-        if (!UI.confirmar("Confirmar eliminación",
-                "¿Estás seguro? El usuario \"" + u.getUsuario() + "\" se borrará de la base de datos."))
-            return;
-
-        boolean ok = ctrl.eliminarUsuario(u.getId());
-        if (ok) {
-            cargar();
-            UI.mostrarInfo("Eliminado", "El usuario fue eliminado correctamente.");
-        } else {
-            UI.mostrarError("Error", "No se pudo eliminar. Puede tener registros asociados.");
-        }
-    }
 
     // ── Columnas helper ──────────────────────────────────────
     private void col(String name, String prop, double w) {
@@ -203,25 +201,21 @@ class UsuariosImpl extends VBox {
         TableColumn<Usuario, Void> c = new TableColumn<>("Acciones");
         c.setCellFactory(col -> new TableCell<>() {
             final Button btnEdit = UI.btnSecundario("Editar");
-            final Button btnDesact = UI.btnSecundario("Act");
+            final Button btnToggle = UI.btnSecundario("Estado");
             final Button btnPasswd = UI.btnSecundario("Pass");
-            final Button btnElim = UI.btnPeligro("Elim");
             {
                 btnEdit.setStyle(btnEdit.getStyle() + UI.BTN_SMALL);
-                btnDesact.setStyle(btnDesact.getStyle() + UI.BTN_SMALL);
+                btnToggle.setStyle(btnToggle.getStyle() + UI.BTN_SMALL);
                 btnPasswd.setStyle(btnPasswd.getStyle() + UI.BTN_SMALL);
-                btnElim.setStyle(btnElim.getStyle() + UI.BTN_SMALL);
 
                 // Tooltips explicativos
-                btnEdit.setTooltip(new Tooltip("Editar usuario"));
-                btnDesact.setTooltip(new Tooltip("Activar/Desactivar"));
+                btnEdit.setTooltip(new Tooltip("Editar empleado"));
+                btnToggle.setTooltip(new Tooltip("Activar o desactivar empleado"));
                 btnPasswd.setTooltip(new Tooltip("Cambiar contraseña"));
-                btnElim.setTooltip(new Tooltip("Eliminar"));
 
                 btnEdit.setOnAction(e -> formularioUsuario(getTableView().getItems().get(getIndex())));
-                btnDesact.setOnAction(e -> toggleActivo(getTableView().getItems().get(getIndex())));
+                btnToggle.setOnAction(e -> toggleActivo(getTableView().getItems().get(getIndex())));
                 btnPasswd.setOnAction(e -> formularioCambiarPassword(getTableView().getItems().get(getIndex())));
-                btnElim.setOnAction(e -> eliminarUsuario(getTableView().getItems().get(getIndex())));
             }
 
             @Override
@@ -231,16 +225,21 @@ class UsuariosImpl extends VBox {
                     setGraphic(null);
                     return;
                 }
-                HBox h = new HBox(4);
+                HBox h = new HBox(6);
                 h.setAlignment(Pos.CENTER_LEFT);
+                Usuario u = getTableView().getItems().get(getIndex());
+                btnToggle.setText(u.isActivo() ? "Desactivar" : "Activar");
+                btnToggle.setTooltip(new Tooltip(u.isActivo() ? "Desactivar empleado" : "Activar empleado"));
                 if (esAdmin) {
-                    Usuario u = getTableView().getItems().get(getIndex());
                     boolean esMismo = u.getId() == Session.getInstance().getUsuario().getId();
-                    h.getChildren().addAll(btnEdit, btnDesact, btnPasswd);
-                    if (!esMismo)
-                        h.getChildren().add(btnElim);
+                    h.getChildren().addAll(btnEdit, btnToggle, btnPasswd);
+                    if (esMismo) {
+                        // Evitar editar rol/estado del propio usuario sin cerrar sesión
+                        btnToggle.setDisable(true);
+                    } else {
+                        btnToggle.setDisable(false);
+                    }
                 } else {
-                    Usuario u = getTableView().getItems().get(getIndex());
                     if (u.getId() == Session.getInstance().getUsuario().getId()) {
                         h.getChildren().add(btnPasswd);
                     }
@@ -248,7 +247,7 @@ class UsuariosImpl extends VBox {
                 setGraphic(h);
             }
         });
-        c.setPrefWidth(180);
+        c.setPrefWidth(220);
         tabla.getColumns().add(c);
     }
 
@@ -256,38 +255,54 @@ class UsuariosImpl extends VBox {
     private void cargar() {
         try {
             if (Session.getInstance().isAdmin()) {
-                // Mostrar SOLO usuarios activos (ocultar inactivos)
                 List<Usuario> todos = ctrl.obtenerTodos();
-                List<Usuario> activos = todos.stream()
-                        .filter(Usuario::isActivo)
-                        .toList();
-                datos.setAll(activos);
+                todos.sort(Comparator.comparing(Usuario::isActivo).reversed()
+                        .thenComparing(u -> (u.getNombre() + " " + u.getApellido())));
+                datos.setAll(todos);
             } else {
-                // Encargado/Cajero solo se ve a sí mismo
                 Usuario yo = ctrl.obtenerUsuario(Session.getInstance().getUsuario().getId());
                 datos.setAll(yo != null ? List.of(yo) : List.of());
             }
+            aplicarFiltro();
         } catch (Exception e) {
             UI.mostrarError("Error", e.getMessage());
         }
     }
 
-    private void filtrar(String q) {
+    private void aplicarFiltro() {
         try {
-            if (q == null || q.isBlank()) {
-                cargar();
-                return;
-            }
-            String lq = q.toLowerCase();
-            // Filtrar solo sobre usuarios activos
-            List<Usuario> activos = ctrl.obtenerTodos().stream()
-                    .filter(Usuario::isActivo)
+            String q = busqueda.getText();
+            String estado = filtroEstado.getValue();
+            String rol = filtroRol.getValue();
+
+            List<Usuario> base = Session.getInstance().isAdmin() ? ctrl.obtenerTodos() : datos;
+
+            List<Usuario> filtrados = base.stream()
+                    .filter(u -> {
+                        if (estado != null && !estado.equals("Todos")) {
+                            if (estado.equals("Activos") && !u.isActivo()) return false;
+                            if (estado.equals("Inactivos") && u.isActivo()) return false;
+                        }
+                        if (rol != null && !rol.equals("Todos los roles")) {
+                            if (rol.equals("Administrador Global") && u.getRol() != 1) return false;
+                            if (rol.equals("Encargado") && u.getRol() != 2) return false;
+                            if (rol.equals("Cajero") && u.getRol() != 3) return false;
+                        }
+                        if (q == null || q.isBlank()) return true;
+                        String lq = q.toLowerCase();
+                        String nombreCompleto = (u.getNombre() + " " + u.getApellido()).toLowerCase();
+                        String estacionamiento = u.getNombreEstacionamiento() != null ? u.getNombreEstacionamiento().toLowerCase() : "";
+                        String rolText = ctrl.obtenerDescripcionRol(u.getRol()).toLowerCase();
+                        return nombreCompleto.contains(lq)
+                                || u.getUsuario().toLowerCase().contains(lq)
+                                || (u.getEmail() != null && u.getEmail().toLowerCase().contains(lq))
+                                || estacionamiento.contains(lq)
+                                || rolText.contains(lq)
+                                || (u.isActivo() ? "activo" : "inactivo").contains(lq);
+                    })
                     .toList();
-            datos.setAll(activos.stream()
-                    .filter(u -> (u.getNombre() + " " + u.getApellido()).toLowerCase().contains(lq)
-                            || u.getUsuario().toLowerCase().contains(lq)
-                            || (u.getEmail() != null && u.getEmail().toLowerCase().contains(lq)))
-                    .toList());
+
+            datos.setAll(filtrados);
         } catch (Exception ex) {
             cargar();
         }
@@ -299,10 +314,12 @@ class UsuariosImpl extends VBox {
             return;
         u.setActivo(!u.isActivo());
         boolean ok = ctrl.actualizarUsuario(u);
-        if (ok)
+        if (ok) {
             cargar();
-        else
+            UI.mostrarInfo("Estado actualizado", "El empleado ha sido " + (u.isActivo() ? "activado" : "desactivado") + " correctamente.");
+        } else {
             UI.mostrarError("Error", "No se pudo cambiar el estado.");
+        }
     }
 
     // ── Formulario crear/editar usuario ─────────────────────
@@ -452,8 +469,10 @@ class UsuariosImpl extends VBox {
             if (ok) {
                 cargar();
                 ven.close();
-            } else
+                UI.mostrarInfo("Éxito", editar == null ? "Empleado creado correctamente." : "Empleado actualizado correctamente.");
+            } else {
                 UI.setError(err, "Error al guardar. Verifica los datos e intenta de nuevo.");
+            }
         });
 
         HBox bRow = new HBox(10, cancelar, guardar);
