@@ -1369,7 +1369,12 @@ class ReportesImpl extends ScrollPane {
     private String seleccionarCarpetaGuardado(String tipoReporte){
         DirectoryChooser chooser=new DirectoryChooser();
         chooser.setTitle("Guardar "+tipoReporte+" en...");
-        chooser.setInitialDirectory(new File(System.getProperty("user.home")+File.separator+"Descargas"));
+        String descargas = System.getProperty("user.home")+File.separator+"Descargas";
+        File initialDir = new File(descargas);
+        if(!initialDir.exists()) {
+            initialDir = new File(System.getProperty("user.home"));
+        }
+        chooser.setInitialDirectory(initialDir);
         File carpeta=chooser.showDialog(null);
         return carpeta!=null?carpeta.getAbsolutePath():null;
     }
@@ -1382,12 +1387,8 @@ class ReportesImpl extends ScrollPane {
             GeneradorPDF gen=new GeneradorPDF(rutaCarpeta);
             Session s=Session.getInstance();
             int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
-            Estacionamiento est=estCtrl.obtenerEstacionamiento(estId);
-            if(est!=null){
-                boolean ok=gen.generarReporteOcupacion(est.getNombre(), est.getTotalCajones(), 
-                    est.getCajonesDisponibles(), est.getTotalCajones()-est.getCajonesDisponibles(), 0);
-                UI.mostrarInfo("Reporte PDF", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
-            }
+            boolean ok=gen.generarReporteOcupacion(estId);
+            UI.mostrarInfo("Reporte PDF", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
         }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
     }
 
@@ -1399,9 +1400,7 @@ class ReportesImpl extends ScrollPane {
             GeneradorPDF gen=new GeneradorPDF(rutaCarpeta);
             Session s=Session.getInstance();
             int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
-            double ing=regCtrl.obtenerIngresoDelDia(estId, LocalDateTime.now());
-            int registros=regCtrl.obtenerRegistrosPorEstacionamiento(estId).size();
-            boolean ok=gen.generarReporteIngresos(LocalDate.now(), ing, registros);
+            boolean ok=gen.generarReporteIngresos(estId, LocalDate.now());
             UI.mostrarInfo("Reporte PDF", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
         }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
     }
@@ -1414,9 +1413,7 @@ class ReportesImpl extends ScrollPane {
             GeneradorPDF gen=new GeneradorPDF(rutaCarpeta);
             Session s=Session.getInstance();
             int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
-            List<Pension> pensiones=penCtrl.obtenerPensionesActivas(estId);
-            double total=pensiones.stream().mapToDouble(Pension::getMonto).sum();
-            boolean ok=gen.generarReportePensiones(pensiones.size(), total);
+            boolean ok=gen.generarReportePensiones(estId);
             UI.mostrarInfo("Reporte PDF", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
         }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
     }
@@ -1429,12 +1426,8 @@ class ReportesImpl extends ScrollPane {
             GeneradorExcel gen=new GeneradorExcel(rutaCarpeta);
             Session s=Session.getInstance();
             int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
-            Estacionamiento est=estCtrl.obtenerEstacionamiento(estId);
-            if(est!=null){
-                boolean ok=gen.generarReporteOcupacion(est.getNombre(), est.getTotalCajones(), 
-                    est.getCajonesDisponibles(), est.getTotalCajones()-est.getCajonesDisponibles(), 0);
-                UI.mostrarInfo("Reporte Excel", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
-            }
+            boolean ok=gen.generarReporteOcupacionBD(estId);
+            UI.mostrarInfo("Reporte Excel", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
         }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
     }
 
@@ -1446,9 +1439,7 @@ class ReportesImpl extends ScrollPane {
             GeneradorExcel gen=new GeneradorExcel(rutaCarpeta);
             Session s=Session.getInstance();
             int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
-            double ing=regCtrl.obtenerIngresoDelDia(estId, LocalDateTime.now());
-            int registros=regCtrl.obtenerRegistrosPorEstacionamiento(estId).size();
-            boolean ok=gen.generarReporteIngresos(LocalDate.now(), LocalDate.now(), ing, registros);
+            boolean ok=gen.generarReporteIngresosBD(estId, LocalDate.now(), LocalDate.now());
             UI.mostrarInfo("Reporte Excel", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
         }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
     }
@@ -1461,9 +1452,7 @@ class ReportesImpl extends ScrollPane {
             GeneradorExcel gen=new GeneradorExcel(rutaCarpeta);
             Session s=Session.getInstance();
             int estId=s.getEstacionamientoId()!=null?s.getEstacionamientoId():1;
-            List<Pension> pensiones=penCtrl.obtenerPensionesActivas(estId);
-            double total=pensiones.stream().mapToDouble(Pension::getMonto).sum();
-            boolean ok=gen.generarReportePensiones(pensiones.size(), 0, 0, total);
+            boolean ok=gen.generarReportePensionBD(estId);
             UI.mostrarInfo("Reporte Excel", ok?"Reporte generado en: "+rutaCarpeta:"Error al generar reporte");
         }catch(Exception e){UI.mostrarError("Error",e.getMessage());}
     }
