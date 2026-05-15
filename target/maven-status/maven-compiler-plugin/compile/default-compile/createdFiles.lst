@@ -3,6 +3,7 @@ com\estacionamiento\controladores\PrecioController.class
 com\estacionamiento\dao\PromocionDAO.class
 com\estacionamiento\controladores\PensionController.class
 com\estacionamiento\ui\modules\VehiculosModule.class
+com\estacionamiento\ui\modules\RestaurantesImpl$1.class
 com\estacionamiento\ui\modules\CajaModule$2.class
 com\estacionamiento\dao\PensionDAO.class
 com\estacionamiento\modelos\Restaurante.class
@@ -13,6 +14,7 @@ com\estacionamiento\ui\main\MainView$2.class
 com\estacionamiento\utilidades\GraficoPastel.class
 com\estacionamiento\modelos\Promocion.class
 com\estacionamiento\ui\modules\ReportesModule.class
+com\estacionamiento\ui\modules\ConveniosImpl$14.class
 com\estacionamiento\utilidades\EmailSender.class
 com\estacionamiento\ui\main\Sidebar.class
 com\estacionamiento\MainTest.class
@@ -22,6 +24,7 @@ com\estacionamiento\api\ApiClient.class
 com\estacionamiento\ui\modules\ClientesModule.class
 com\estacionamiento\ui\modules\CorreoRecordatorioView.class
 com\estacionamiento\ui\modules\UsuariosImpl$4.class
+com\estacionamiento\ui\modules\ConveniosImpl$6.class
 com\estacionamiento\api\ApiSqlClient$UpdateResult.class
 com\estacionamiento\modelos\HistorialEvento.class
 com\estacionamiento\controladores\HistorialController.class
@@ -40,6 +43,7 @@ com\estacionamiento\ui\modules\ConfiguracionImpl.class
 com\estacionamiento\controladores\NotificacionController.class
 com\estacionamiento\controladores\CajonController.class
 com\estacionamiento\ui\modules\DashboardImpl.class
+com\estacionamiento\ui\modules\ConveniosImpl$ResumenRestaurante.class
 com\estacionamiento\dao\UsuarioDAO.class
 com\estacionamiento\ui\modules\ConveniosImpl$2.class
 com\estacionamiento\ui\modules\UsuariosImpl$5.class
@@ -52,6 +56,7 @@ com\estacionamiento\ui\modules\RegistrosImpl.class
 com\estacionamiento\ui\modules\CajonesImpl$2.class
 com\estacionamiento\dao\ConfiguracionDAO.class
 com\estacionamiento\modelos\Vehiculo.class
+com\estacionamiento\ui\modules\ConveniosImpl$9.class
 com\estacionamiento\ui\modules\PensionesImpl$1.class
 com\estacionamiento\dao\CajonDAO.class
 com\estacionamiento\ui\modules\ConfiguracionModule.class
@@ -62,6 +67,7 @@ com\estacionamiento\ui\modules\CajaModule$1.class
 com\estacionamiento\ui\modules\PromocionesImpl$2.class
 com\estacionamiento\ui\modules\ConveniosImpl$1.class
 com\estacionamiento\utilidades\ConfigManager.class
+com\estacionamiento\ui\modules\ConveniosImpl$8.class
 com\estacionamiento\utilidades\GraficoLineas.class
 com\estacionamiento\utilidades\TablaPersonalizada$2.class
 com\estacionamiento\utilidades\Logger.class
@@ -73,8 +79,10 @@ com\estacionamiento\ui\modules\ConveniosModule.class
 com\estacionamiento\ui\modules\EstacionamientosImpl.class
 com\estacionamiento\Main.class
 com\estacionamiento\dao\VehiculoDAO.class
+com\estacionamiento\ui\modules\ConveniosImpl$7.class
 com\estacionamiento\modelos\FacturaRestaurante.class
 com\estacionamiento\utilidades\EmailSender$1.class
+com\estacionamiento\ui\modules\ConveniosImpl$10.class
 com\estacionamiento\ui\modules\EstacionamientosImpl$1.class
 com\estacionamiento\utilidades\RecordatorioPensionTask.class
 com\estacionamiento\ui\modules\CajaImpl.class
@@ -87,6 +95,7 @@ com\estacionamiento\modelos\CorteCaja.class
 com\estacionamiento\ui\modules\PreciosImpl$1.class
 com\estacionamiento\modelos\Cliente.class
 com\estacionamiento\modelos\Pago$MetodoPago.class
+com\estacionamiento\ui\modules\ConveniosImpl$4.class
 com\estacionamiento\dao\ClienteDAO.class
 com\estacionamiento\ui\modules\CajaModule$6.class
 com\estacionamiento\utilidades\GeneradorExcel.class
@@ -102,6 +111,7 @@ com\estacionamiento\utilidades\TablaPersonalizada.class
 com\estacionamiento\api\ApiSqlClient$QueryResult.class
 com\estacionamiento\ui\modules\NotificacionesModule.class
 com\estacionamiento\ui\modules\PreciosImpl.class
+com\estacionamiento\ui\modules\ConveniosImpl$13.class
 com\estacionamiento\modelos\Estacionamiento.class
 com\estacionamiento\ui\modules\ReportesImpl.class
 com\estacionamiento\ui\modules\EstacionamientosModule.class
@@ -113,12 +123,14 @@ com\estacionamiento\ui\main\MainView.class
 com\estacionamiento\api\HttpJdbcBridge.class
 com\estacionamiento\modelos\Usuario.class
 com\estacionamiento\utilidades\Constantes.class
+com\estacionamiento\ui\modules\ConveniosImpl$12.class
 com\estacionamiento\utilidades\GeneradorPDF.class
 com\estacionamiento\ui\modules\RegistrosModule.class
 com\estacionamiento\api\UsuarioApi.class
 com\estacionamiento\ui\modules\CajaModule$4.class
 com\estacionamiento\ui\UI.class
 com\estacionamiento\dao\ConexionDB.class
+com\estacionamiento\ui\modules\RestaurantesImpl$3.class
 com\estacionamiento\ui\modules\UsuariosModule.class
 com\estacionamiento\utilidades\GraficoBarras.class
 com\estacionamiento\controladores\RegistroController.class
@@ -130,6 +142,9 @@ com\estacionamiento\ui\Session.class
 com\estacionamiento\App.class
 com\estacionamiento\modelos\RegistroUsoRestaurante.class
 com\estacionamiento\modelos\CorteCaja$TipoCorte.class
+com\estacionamiento\ui\modules\RestaurantesImpl.class
+com\estacionamiento\ui\modules\RestaurantesModule.class
+com\estacionamiento\ui\modules\ConveniosImpl$11.class
 com\estacionamiento\ui\modules\CajaModule$3.class
 com\estacionamiento\modelos\RegistroEntradaSalida.class
 com\estacionamiento\ui\modules\RegistrosImpl$1.class
@@ -142,3 +157,5 @@ com\estacionamiento\ui\modules\VehiculosImpl$2.class
 com\estacionamiento\modelos\Notificacion.class
 com\estacionamiento\api\SimpleJson$Parser.class
 com\estacionamiento\utilidades\Validaciones.class
+com\estacionamiento\ui\modules\RestaurantesImpl$2.class
+com\estacionamiento\ui\modules\ConveniosImpl$5.class

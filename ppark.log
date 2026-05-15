@@ -63,3 +63,7 @@ The last packet sent successfully to the server was 0 milliseconds ago. The driv
 [2026-05-14 19:58:56] [ERROR] No se pudo conectar a la base de datos - Communications link failure
 
 The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+[2026-05-15 11:33:20] [INFO] Usando conexion por API HTTPS
+[2026-05-15 12:00:48] [INFO] Usando conexion por API HTTPS
+[2026-05-15 12:17:22] [INFO] Usando conexion por API HTTPS
+[2026-05-15 12:46:57] [INFO] Usando conexion por API HTTPS
