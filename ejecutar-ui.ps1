@@ -18,6 +18,7 @@ $javaHomeCandidates += @(
     'C:\Program Files\Java',
     'C:\Program Files (x86)\Java',
     'C:\Program Files\Apache NetBeans\jdk',
+    'C:\Program Files\Apache NetBeans\jdk\bin\javac.exe',
     'C:\Program Files\Android\Android Studio\jbr',
     'C:\Users\julie\AppData\Local\Programs\AdoptOpenJDK',
     'C:\Users\julie\AppData\Local\Programs\Zulu'
