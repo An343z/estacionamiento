@@ -1,14 +1,17 @@
 package com.estacionamiento.controladores;
 
 import com.estacionamiento.dao.CorteCajaDAO;
+import com.estacionamiento.dao.LiquidacionRestauranteDAO;
 import com.estacionamiento.dao.PagoDAO;
 import com.estacionamiento.modelos.CorteCaja;
+import com.estacionamiento.modelos.LiquidacionRestaurante;
 import com.estacionamiento.modelos.Pago;
 import com.estacionamiento.modelos.RegistroEntradaSalida;
 import com.estacionamiento.modelos.Usuario;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -26,6 +29,7 @@ public class CajaController {
 
     private final PagoDAO       pagoDAO       = new PagoDAO();
     private final CorteCajaDAO  corteCajaDAO  = new CorteCajaDAO();
+    private final LiquidacionRestauranteDAO liquidacionDAO = new LiquidacionRestauranteDAO();
 
     // ════════════════════════════════════════════════════════
     //  PAGOS
@@ -67,6 +71,12 @@ public class CajaController {
             throw new IllegalArgumentException(
                     "El vehículo aún está en el estacionamiento. Registra primero su salida.");
         }
+        if (pagoDAO.existePagoActivoPorRegistro(registro.getId())) {
+            throw new IllegalArgumentException("Este registro ya tiene un pago activo.");
+        }
+        if (metodo == Pago.MetodoPago.CONVENIO) {
+            throw new IllegalArgumentException("Para pagos por convenio usa registrarPagoConvenio con restaurante/convenio.");
+        }
         if (montoPagado < registro.getMonto()) {
             throw new IllegalArgumentException(
                     String.format("El monto pagado ($%.2f) es menor al monto a cobrar ($%.2f).",
@@ -93,12 +103,42 @@ public class CajaController {
         return null;
     }
 
+    public Pago registrarPagoConvenio(RegistroEntradaSalida registro,
+                                      Usuario cajero,
+                                      int restauranteId,
+                                      Integer convenioId) {
+        if (restauranteId <= 0) {
+            throw new IllegalArgumentException("El restaurante es obligatorio para pagos por convenio.");
+        }
+        validarRegistroCobrable(registro, cajero);
+
+        Pago pago = new Pago(
+                registro.getId(),
+                registro.getEstacionamientoId(),
+                cajero.getId(),
+                cajero.getNombre() + " " + cajero.getApellido(),
+                registro.getMonto(),
+                registro.getMonto(),
+                Pago.MetodoPago.CONVENIO
+        );
+        pago.setRestauranteId(restauranteId);
+        pago.setConvenioId(convenioId);
+        pago.setEstadoLiquidacion("PENDIENTE");
+        pago.setNotas("Pago cubierto por convenio de restaurante");
+        pago.setNumeroTicket(generarFolioTicket(registro.getEstacionamientoId()));
+
+        int id = pagoDAO.crear(pago);
+        if (id > 0) {
+            pago.setId(id);
+            return pago;
+        }
+        return null;
+    }
+
     /** Lista pagos del estacionamiento del cajero (o todos si es Admin Global) */
     public List<Pago> listarPagos(Usuario usuario) {
         if (usuario.esAdminGlobal()) {
-            // Admin ve todo — carga por todos los estacionamientos no implementado aquí
-            // por simplicidad retorna los del primer estacionamiento; adaptar si se necesita
-            return pagoDAO.obtenerPorEstacionamiento(1);
+            return pagoDAO.obtenerTodos();
         }
         int estId = usuario.getEstacionamientoId() != null ? usuario.getEstacionamientoId() : 0;
         return pagoDAO.obtenerPorEstacionamiento(estId);
@@ -117,6 +157,50 @@ public class CajaController {
         validarFechas(desde, hasta);
         int estId = resolverEstacionamiento(usuario);
         return pagoDAO.obtenerEntreFechas(estId, desde, hasta);
+    }
+
+    public List<Pago> listarPagosConvenioPendientes(int restauranteId,
+                                                     LocalDateTime desde,
+                                                     LocalDateTime hasta) {
+        validarFechas(desde, hasta);
+        return pagoDAO.obtenerPendientesPorRestaurante(restauranteId, desde, hasta);
+    }
+
+    public LiquidacionRestaurante liquidarPagosRestaurante(int restauranteId,
+                                                           int estacionamientoId,
+                                                           Integer convenioId,
+                                                           LocalDateTime desde,
+                                                           LocalDateTime hasta,
+                                                           String observaciones) {
+        validarFechas(desde, hasta);
+        List<Pago> pagos = pagoDAO.obtenerPendientesPorRestaurante(restauranteId, desde, hasta);
+        if (pagos.isEmpty()) {
+            throw new IllegalArgumentException("No hay pagos de convenio pendientes para liquidar.");
+        }
+
+        double total = pagos.stream().mapToDouble(Pago::getMonto).sum();
+        LiquidacionRestaurante liquidacion = new LiquidacionRestaurante();
+        liquidacion.setRestauranteId(restauranteId);
+        liquidacion.setEstacionamientoId(estacionamientoId);
+        liquidacion.setConvenioId(convenioId);
+        liquidacion.setFechaInicio(desde);
+        liquidacion.setFechaFin(hasta);
+        liquidacion.setFechaLiquidacion(LocalDateTime.now());
+        liquidacion.setTotal(total);
+        liquidacion.setEstado("COBRADA");
+        liquidacion.setFolioLiquidacion(generarFolioLiquidacion(restauranteId));
+        liquidacion.setObservaciones(observaciones != null ? observaciones.trim() : "");
+
+        int id = liquidacionDAO.crear(liquidacion);
+        if (id <= 0) return null;
+
+        liquidacion.setId(id);
+        List<Integer> pagoIds = new ArrayList<>();
+        for (Pago pago : pagos) {
+            pagoIds.add(pago.getId());
+        }
+        pagoDAO.marcarLiquidacion(pagoIds, id);
+        return liquidacion;
     }
 
     // ════════════════════════════════════════════════════════
@@ -269,6 +353,28 @@ public class CajaController {
     // ════════════════════════════════════════════════════════
 
     /** Resuelve el ID del estacionamiento según el rol del usuario */
+    private void validarRegistroCobrable(RegistroEntradaSalida registro, Usuario cajero) {
+        if (registro == null) {
+            throw new IllegalArgumentException("El registro de entrada/salida no puede ser nulo.");
+        }
+        if (cajero == null) {
+            throw new IllegalArgumentException("El cajero es obligatorio.");
+        }
+        if (cajero.getRol() != 3 && cajero.getRol() != 2 && cajero.getRol() != 1) {
+            throw new SecurityException("No tienes permiso para registrar pagos.");
+        }
+        if (!cajero.esAdminGlobal() && cajero.getEstacionamientoId() != null
+                && cajero.getEstacionamientoId() != registro.getEstacionamientoId()) {
+            throw new SecurityException("No puedes cobrar en un estacionamiento diferente al tuyo.");
+        }
+        if (!"Finalizado".equals(registro.getEstado())) {
+            throw new IllegalArgumentException("Registra primero la salida del vehiculo.");
+        }
+        if (pagoDAO.existePagoActivoPorRegistro(registro.getId())) {
+            throw new IllegalArgumentException("Este registro ya tiene un pago activo.");
+        }
+    }
+
     private int resolverEstacionamiento(Usuario usuario) {
         if (usuario.esAdminGlobal() || usuario.getEstacionamientoId() == null) {
             return 1; // Admin sin asignación: retorna 1 como default
@@ -293,5 +399,10 @@ public class CajaController {
     private String generarFolioCorte(int estacionamientoId) {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         return "C" + estacionamientoId + "-" + LocalDateTime.now().format(fmt);
+    }
+
+    private String generarFolioLiquidacion(int restauranteId) {
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        return "LR" + restauranteId + "-" + LocalDateTime.now().format(fmt);
     }
 }

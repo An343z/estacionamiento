@@ -31,7 +31,7 @@ CREATE TABLE usuarios (
     apellido VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE,
     usuario VARCHAR(50) UNIQUE NOT NULL,
-    contrasena VARCHAR(100) NOT NULL,
+    contrasena VARCHAR(255) NOT NULL,
     rol INT NOT NULL DEFAULT 3,
     estacionamiento_id INT,
     activo BOOLEAN DEFAULT TRUE,
@@ -232,9 +232,15 @@ CREATE TABLE convenios_restaurante (
     fecha_fin TIMESTAMP,
     estado VARCHAR(20) NOT NULL DEFAULT 'Vigente',
     estacionamiento_id INT NOT NULL,
+    tipo_cobertura VARCHAR(30) NOT NULL DEFAULT 'TOTAL',
+    porcentaje_cobertura DECIMAL(5,2) NOT NULL DEFAULT 100.00,
+    monto_maximo DECIMAL(10,2),
+    horas_gratis INT NOT NULL DEFAULT 0,
     FOREIGN KEY (restaurante_id) REFERENCES restaurantes(id),
     FOREIGN KEY (estacionamiento_id) REFERENCES estacionamientos(id),
-    INDEX idx_estado (estado)
+    INDEX idx_estado (estado),
+    INDEX idx_convenio_estacionamiento (estacionamiento_id),
+    INDEX idx_convenio_restaurante (restaurante_id)
 );
 
 -- ========================================
@@ -244,12 +250,19 @@ CREATE TABLE clientes_restaurante (
     id INT PRIMARY KEY AUTO_INCREMENT,
     cliente_id INT NOT NULL,
     restaurante_id INT NOT NULL,
+    convenio_id INT,
+    estacionamiento_id INT,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_fin TIMESTAMP NULL,
+    observaciones TEXT,
     activo BOOLEAN DEFAULT TRUE,
     FOREIGN KEY (cliente_id) REFERENCES clientes(id),
     FOREIGN KEY (restaurante_id) REFERENCES restaurantes(id),
+    FOREIGN KEY (convenio_id) REFERENCES convenios_restaurante(id),
+    FOREIGN KEY (estacionamiento_id) REFERENCES estacionamientos(id),
     INDEX idx_cliente (cliente_id),
-    INDEX idx_restaurante (restaurante_id)
+    INDEX idx_restaurante (restaurante_id),
+    INDEX idx_cliente_rest_activo (cliente_id, restaurante_id, activo)
 );
 
 -- ========================================
@@ -283,6 +296,66 @@ CREATE TABLE facturas_restaurante (
     FOREIGN KEY (restaurante_id) REFERENCES restaurantes(id),
     INDEX idx_fecha (fecha),
     INDEX idx_estado (estado)
+);
+
+-- ========================================
+-- TABLA: liquidaciones de convenio restaurante
+-- ========================================
+CREATE TABLE liquidaciones_restaurante (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    restaurante_id INT NOT NULL,
+    estacionamiento_id INT NOT NULL,
+    convenio_id INT,
+    fecha_inicio TIMESTAMP NOT NULL,
+    fecha_fin TIMESTAMP NOT NULL,
+    fecha_liquidacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    total DECIMAL(10,2) NOT NULL DEFAULT 0,
+    estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    folio_liquidacion VARCHAR(40) UNIQUE,
+    observaciones TEXT,
+    FOREIGN KEY (restaurante_id) REFERENCES restaurantes(id),
+    FOREIGN KEY (estacionamiento_id) REFERENCES estacionamientos(id),
+    FOREIGN KEY (convenio_id) REFERENCES convenios_restaurante(id),
+    INDEX idx_liq_restaurante (restaurante_id),
+    INDEX idx_liq_estacionamiento (estacionamiento_id),
+    INDEX idx_liq_estado (estado),
+    INDEX idx_liq_fecha (fecha_liquidacion)
+);
+
+-- ========================================
+-- TABLA: pagos
+-- ========================================
+CREATE TABLE pagos (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    registro_id INT NOT NULL,
+    estacionamiento_id INT NOT NULL,
+    cajero_id INT NOT NULL,
+    cajero_nombre VARCHAR(200),
+    monto DECIMAL(10,2) NOT NULL DEFAULT 0,
+    monto_pagado DECIMAL(10,2) NOT NULL DEFAULT 0,
+    cambio DECIMAL(10,2) NOT NULL DEFAULT 0,
+    metodo_pago VARCHAR(30) NOT NULL,
+    numero_ticket VARCHAR(40) UNIQUE,
+    fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    notas TEXT,
+    anulado BOOLEAN DEFAULT FALSE,
+    restaurante_id INT,
+    convenio_id INT,
+    liquidacion_restaurante_id INT,
+    estado_liquidacion VARCHAR(20) NOT NULL DEFAULT 'NO_APLICA',
+    FOREIGN KEY (registro_id) REFERENCES registros_entrada_salida(id),
+    FOREIGN KEY (estacionamiento_id) REFERENCES estacionamientos(id),
+    FOREIGN KEY (cajero_id) REFERENCES usuarios(id),
+    FOREIGN KEY (restaurante_id) REFERENCES restaurantes(id),
+    FOREIGN KEY (convenio_id) REFERENCES convenios_restaurante(id),
+    FOREIGN KEY (liquidacion_restaurante_id) REFERENCES liquidaciones_restaurante(id),
+    INDEX idx_pagos_estacionamiento (estacionamiento_id),
+    INDEX idx_pagos_fecha (fecha_pago),
+    INDEX idx_pagos_metodo (metodo_pago),
+    INDEX idx_pagos_anulado (anulado),
+    INDEX idx_pagos_registro (registro_id),
+    INDEX idx_pagos_restaurante (restaurante_id),
+    INDEX idx_pagos_liquidacion_estado (estado_liquidacion)
 );
 
 -- ========================================

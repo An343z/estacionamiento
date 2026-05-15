@@ -9,7 +9,11 @@ public class ClienteRestaurante {
     private int id;
     private int clienteId;
     private int restauranteId;
+    private Integer convenioId;
+    private Integer estacionamientoId;
     private LocalDateTime fechaRegistro;
+    private LocalDateTime fechaFin;
+    private String observaciones;
     private boolean activo;
 
     public ClienteRestaurante() {
@@ -46,12 +50,44 @@ public class ClienteRestaurante {
         this.restauranteId = restauranteId;
     }
 
+    public Integer getConvenioId() {
+        return convenioId;
+    }
+
+    public void setConvenioId(Integer convenioId) {
+        this.convenioId = convenioId;
+    }
+
+    public Integer getEstacionamientoId() {
+        return estacionamientoId;
+    }
+
+    public void setEstacionamientoId(Integer estacionamientoId) {
+        this.estacionamientoId = estacionamientoId;
+    }
+
     public LocalDateTime getFechaRegistro() {
         return fechaRegistro;
     }
 
     public void setFechaRegistro(LocalDateTime fechaRegistro) {
         this.fechaRegistro = fechaRegistro;
+    }
+
+    public LocalDateTime getFechaFin() {
+        return fechaFin;
+    }
+
+    public void setFechaFin(LocalDateTime fechaFin) {
+        this.fechaFin = fechaFin;
+    }
+
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
     }
 
     public boolean isActivo() {

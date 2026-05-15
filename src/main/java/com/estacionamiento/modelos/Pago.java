@@ -39,6 +39,10 @@ public class Pago {
     private LocalDateTime fechaPago;
     private String notas;
     private boolean anulado;         // Si el pago fue cancelado
+    private Integer restauranteId;
+    private Integer convenioId;
+    private Integer liquidacionRestauranteId;
+    private String estadoLiquidacion;
 
     public Pago() {}
 
@@ -56,6 +60,7 @@ public class Pago {
         this.fechaPago         = LocalDateTime.now();
         this.anulado           = false;
         this.notas             = "";
+        this.estadoLiquidacion = metodoPago == MetodoPago.CONVENIO ? "PENDIENTE" : "NO_APLICA";
     }
 
     // ---- Getters y Setters ----
@@ -101,6 +106,18 @@ public class Pago {
 
     public boolean isAnulado() { return anulado; }
     public void setAnulado(boolean anulado) { this.anulado = anulado; }
+
+    public Integer getRestauranteId() { return restauranteId; }
+    public void setRestauranteId(Integer restauranteId) { this.restauranteId = restauranteId; }
+
+    public Integer getConvenioId() { return convenioId; }
+    public void setConvenioId(Integer convenioId) { this.convenioId = convenioId; }
+
+    public Integer getLiquidacionRestauranteId() { return liquidacionRestauranteId; }
+    public void setLiquidacionRestauranteId(Integer liquidacionRestauranteId) { this.liquidacionRestauranteId = liquidacionRestauranteId; }
+
+    public String getEstadoLiquidacion() { return estadoLiquidacion; }
+    public void setEstadoLiquidacion(String estadoLiquidacion) { this.estadoLiquidacion = estadoLiquidacion; }
 
     @Override
     public String toString() {

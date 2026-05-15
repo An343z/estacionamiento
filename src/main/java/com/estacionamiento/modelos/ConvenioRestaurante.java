@@ -13,6 +13,10 @@ public class ConvenioRestaurante {
     private LocalDateTime fechaFin;
     private String estado; // "Vigente", "Vencido", "Cancelado"
     private int estacionamientoId;
+    private String tipoCobertura; // TOTAL, PORCENTAJE, MONTO_FIJO, HORAS_GRATIS
+    private double porcentajeCobertura;
+    private Double montoMaximo;
+    private int horasGratis;
 
     public ConvenioRestaurante() {
     }
@@ -24,6 +28,8 @@ public class ConvenioRestaurante {
         this.fechaFin = fechaFin;
         this.estacionamientoId = estacionamientoId;
         this.estado = "Vigente";
+        this.tipoCobertura = "TOTAL";
+        this.porcentajeCobertura = 100.0;
     }
 
     // Getters y Setters
@@ -81,6 +87,38 @@ public class ConvenioRestaurante {
 
     public void setEstacionamientoId(int estacionamientoId) {
         this.estacionamientoId = estacionamientoId;
+    }
+
+    public String getTipoCobertura() {
+        return tipoCobertura;
+    }
+
+    public void setTipoCobertura(String tipoCobertura) {
+        this.tipoCobertura = tipoCobertura;
+    }
+
+    public double getPorcentajeCobertura() {
+        return porcentajeCobertura;
+    }
+
+    public void setPorcentajeCobertura(double porcentajeCobertura) {
+        this.porcentajeCobertura = porcentajeCobertura;
+    }
+
+    public Double getMontoMaximo() {
+        return montoMaximo;
+    }
+
+    public void setMontoMaximo(Double montoMaximo) {
+        this.montoMaximo = montoMaximo;
+    }
+
+    public int getHorasGratis() {
+        return horasGratis;
+    }
+
+    public void setHorasGratis(int horasGratis) {
+        this.horasGratis = horasGratis;
     }
 
     @Override
