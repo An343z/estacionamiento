@@ -84,7 +84,21 @@ class UsuariosImpl extends VBox {
             tabla
         );
     }
+    private void eliminarUsuario(Usuario u) {
+    if (!UI.confirmar("Eliminar usuario",
+            "¿Eliminar permanentemente a " + u.getNombre() + " " + u.getApellido() + "?\n" +
+            "Esta acción NO se puede deshacer.")) return;
+    if (!UI.confirmar("Confirmar eliminación",
+            "¿Estás seguro? El usuario \"" + u.getUsuario() + "\" se borrará de la base de datos.")) return;
 
+    boolean ok = ctrl.eliminarUsuario(u.getId());
+    if (ok) {
+        cargar();
+        UI.mostrarInfo("Eliminado", "El usuario fue eliminado correctamente.");
+    } else {
+        UI.mostrarError("Error", "No se pudo eliminar. Puede tener registros asociados.");
+    }
+}
     // ── Columnas helper ──────────────────────────────────────
     private void col(String name, String prop, double w) {
         TableColumn<Usuario, ?> c = new TableColumn<>(name);
@@ -154,6 +168,7 @@ class UsuariosImpl extends VBox {
             final Button btnEdit    = UI.btnSecundario("✏️ Editar");
             final Button btnDesact  = UI.btnSecundario("🔒");
             final Button btnPasswd  = UI.btnSecundario("🔑");
+            final Button btnElim    = UI.btnPeligro("🗑️");
             {
                 btnEdit.setStyle(btnEdit.getStyle()   + UI.BTN_SMALL);
                 btnDesact.setStyle(btnDesact.getStyle()+ UI.BTN_SMALL);
@@ -162,6 +177,8 @@ class UsuariosImpl extends VBox {
                 btnEdit.setOnAction(e -> formularioUsuario(getTableView().getItems().get(getIndex())));
                 btnDesact.setOnAction(e -> toggleActivo(getTableView().getItems().get(getIndex())));
                 btnPasswd.setOnAction(e -> formularioCambiarPassword(getTableView().getItems().get(getIndex())));
+                btnElim.setStyle(btnElim.getStyle() + UI.BTN_SMALL);
+                btnElim.setOnAction(e -> eliminarUsuario(getTableView().getItems().get(getIndex())));
             }
             @Override protected void updateItem(Void v, boolean empty) {
                 super.updateItem(v, empty);
@@ -169,7 +186,10 @@ class UsuariosImpl extends VBox {
                 HBox h = new HBox(6);
                 h.setAlignment(Pos.CENTER_LEFT);
                 if (esAdmin) {
+                    Usuario u = getTableView().getItems().get(getIndex());
+                    boolean esMismo = u.getId() == Session.getInstance().getUsuario().getId();
                     h.getChildren().addAll(btnEdit, btnDesact, btnPasswd);
+                    if (!esMismo) h.getChildren().add(btnElim);
                 } else {
                     // Solo ve su propio perfil
                     Usuario u = getTableView().getItems().get(getIndex());
@@ -180,7 +200,7 @@ class UsuariosImpl extends VBox {
                 setGraphic(h);
             }
         });
-        c.setPrefWidth(200);
+        c.setPrefWidth(240);
         tabla.getColumns().add(c);
     }
 
