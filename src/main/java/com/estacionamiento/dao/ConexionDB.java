@@ -44,10 +44,7 @@ public class ConexionDB {
      */
     public boolean conectar() {
         if (USAR_API_HTTPS) {
-            if (conexion == null) {
-                conexion = HttpJdbcBridge.open();
-                Logger.info("Usando conexion por API HTTPS");
-            }
+            usarConexionApi();
             return true;
         }
 
@@ -62,11 +59,13 @@ public class ConexionDB {
         } catch (ClassNotFoundException e) {
             Logger.error("Driver MySQL no encontrado", e);
             e.printStackTrace();
-            return false;
+            usarConexionApi();
+            return true;
         } catch (SQLException e) {
           Logger.error("No se pudo conectar a la base de datos", e);
             e.printStackTrace();
-            return false;
+            usarConexionApi();
+            return true;
         }
     }
 
@@ -76,28 +75,36 @@ public class ConexionDB {
      */
     public Connection getConexion() {
         if (USAR_API_HTTPS) {
-            if (conexion == null) {
-                conexion = HttpJdbcBridge.open();
-                Logger.info("Usando conexion por API HTTPS");
-            }
+            usarConexionApi();
             return conexion;
         }
 
         if (conexion == null) {
             conectar();
             if (conexion == null) {
-                Logger.info("Usando conexion por API HTTPS");
-                return HttpJdbcBridge.open();
+                usarConexionApi();
+                return conexion;
             }
         }
         try {
             if (conexion.isClosed()) {
                 conectar();
+                if (conexion == null || conexion.isClosed()) {
+                    usarConexionApi();
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            usarConexionApi();
         }
         return conexion;
+    }
+
+    private void usarConexionApi() {
+        if (conexion == null) {
+            conexion = HttpJdbcBridge.open();
+            Logger.info("Usando conexion por API HTTPS");
+        }
     }
 
     /**
