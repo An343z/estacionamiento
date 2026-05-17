@@ -186,6 +186,8 @@ class DashboardImpl extends ScrollPane {
         });
 
         Button btnExcel = UI.btnPrimario("📊 Generar Excel");
+        btnPDF.setMaxWidth(Region.USE_PREF_SIZE);
+        btnExcel.setMaxWidth(Region.USE_PREF_SIZE);
         btnExcel.setOnAction(e -> {
             boolean exito = excelGen.generarReporteCompletoBD();
             if (exito) {
