@@ -1456,8 +1456,10 @@ generadorExcel = new GeneradorExcel(
     Label desc = new Label("Descarga la base de datos en PDF o Excel");
     desc.setStyle("-fx-text-fill:"+UI.MUTED+";-fx-font-size:11px;");
 
-    HBox botones = new HBox(12);
+    FlowPane botones = new FlowPane(12, 12);
     botones.setAlignment(Pos.CENTER_LEFT);
+    botones.setPrefWrapLength(900);
+    botones.setPadding(new Insets(0, 0, 0, 0));
 
     Button btnPdfOcupacion = new Button("PDF Ocupacion");
     btnPdfOcupacion.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
@@ -1856,6 +1858,7 @@ private void generarReporteExcelPensiones(){
         UI.mostrarError("Error", e.getMessage());
     }
 }
+
 
 private void generarPdfAnio(){
 

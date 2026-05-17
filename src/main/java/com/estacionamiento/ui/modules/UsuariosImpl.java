@@ -1,5 +1,9 @@
 package com.estacionamiento.ui.modules;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 import com.estacionamiento.controladores.*;
 import com.estacionamiento.modelos.*;
 import com.estacionamiento.ui.Session;
@@ -18,9 +22,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 // ─────────────────────────────────────────────────────────────
 //  USUARIOS
@@ -32,14 +34,15 @@ import java.util.List;
 // ─────────────────────────────────────────────────────────────
 class UsuariosImpl extends VBox {
 
-    private final UsuarioController    ctrl    = new UsuarioController();
+    private final UsuarioController ctrl = new UsuarioController();
     private final EstacionamientoController estCtrl = new EstacionamientoController();
 
-    private ObservableList<Usuario>    datos;
-    private TableView<Usuario>         tabla;
-    private TextField                  busqueda;
-
-    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private ObservableList<Usuario> datos;
+    private TableView<Usuario> tabla;
+    private TextField busqueda;
+    private ComboBox<String> filtroEstado;
+    private ComboBox<String> filtroRol;
+    private Button btnRefrescar;
 
     UsuariosImpl() {
         setPadding(new Insets(24, 28, 24, 28));
@@ -52,53 +55,65 @@ class UsuariosImpl extends VBox {
     // ── Construcción principal ────────────────────────────────
     private void construir() {
         // Sólo el admin puede crear / editar usuarios
-        Button btnNuevo = UI.btnPrimario("+ Nuevo usuario");
+        Button btnNuevo = UI.btnPrimario("+ Nuevo empleado");
         btnNuevo.setOnAction(e -> formularioUsuario(null));
         btnNuevo.setVisible(Session.getInstance().isAdmin());
         btnNuevo.setManaged(Session.getInstance().isAdmin());
 
-        busqueda = UI.campo("🔍  Buscar por nombre, usuario o email…");
-        busqueda.textProperty().addListener((o, a, n) -> filtrar(n));
+        busqueda = UI.campo("🔍  Buscar por nombre, usuario, rol, estacionamiento o email…");
+        busqueda.textProperty().addListener((o, a, n) -> aplicarFiltro());
+
+        filtroRol = UI.combo();
+        filtroRol.getItems().addAll("Todos los roles", "Administrador Global", "Encargado", "Cajero");
+        filtroRol.setValue("Todos los roles");
+        filtroRol.valueProperty().addListener((o, a, n) -> aplicarFiltro());
+
+        filtroEstado = UI.combo();
+        filtroEstado.getItems().addAll("Todos", "Activos", "Inactivos");
+        filtroEstado.setValue("Activos"); // ✅ CAMBIO: Por defecto mostrar SOLO ACTIVOS
+        filtroEstado.valueProperty().addListener((o, a, n) -> aplicarFiltro());
+
+        btnRefrescar = UI.btnSecundario("⟳ Refrescar");
+        btnRefrescar.setOnAction(e -> cargar());
+
+        HBox barraFiltros = new HBox(10, busqueda, filtroRol, filtroEstado, btnRefrescar);
+        barraFiltros.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(busqueda, Priority.ALWAYS);
 
         tabla = new TableView<>();
         UI.estilizarTabla(tabla);
+        tabla.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         datos = FXCollections.observableArrayList();
         tabla.setItems(datos);
-        VBox.setVgrow(tabla, Priority.ALWAYS);
 
-        // Columnas
-        colStr("Nombre",  u -> u.getNombre() + " " + u.getApellido(), 180);
+        // Columnas con anchos fijos
+        colStr("Nombre", u -> u.getNombre() + " " + u.getApellido(), 180);
         col("Usuario", "usuario", 130);
-        col("Email",   "email",   200);
+        col("Email", "email", 220);
         colRol();
         colEstacionamiento();
         colEstado();
         colAcciones();
 
-        tabla.setPlaceholder(UI.panelVacio("👤", "No hay usuarios"));
+        tabla.setPlaceholder(UI.panelVacio("👥", "No hay empleados para mostrar"));
+
+        // Envolver tabla en ScrollPane para permitir desplazamiento horizontal
+        ScrollPane scrollTabla = new ScrollPane(tabla);
+        scrollTabla.setFitToWidth(false);
+        scrollTabla.setFitToHeight(true);
+        scrollTabla.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollTabla.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollTabla.setPannable(true);
+        scrollTabla.setStyle("-fx-background-color:transparent;");
+        VBox.setVgrow(scrollTabla, Priority.ALWAYS);
 
         getChildren().addAll(
-            UI.encabezado("Gestión de Usuarios",
-                "Administración de cuentas del sistema", btnNuevo),
-            busqueda,
-            tabla
-        );
+                UI.encabezado("Gestión de Empleados",
+                        "Lista de empleados y control de accesos", btnNuevo),
+                barraFiltros,
+                scrollTabla);
     }
-    private void eliminarUsuario(Usuario u) {
-    if (!UI.confirmar("Eliminar usuario",
-            "¿Eliminar permanentemente a " + u.getNombre() + " " + u.getApellido() + "?\n" +
-            "Esta acción NO se puede deshacer.")) return;
-    if (!UI.confirmar("Confirmar eliminación",
-            "¿Estás seguro? El usuario \"" + u.getUsuario() + "\" se borrará de la base de datos.")) return;
 
-    boolean ok = ctrl.eliminarUsuario(u.getId());
-    if (ok) {
-        cargar();
-        UI.mostrarInfo("Eliminado", "El usuario fue eliminado correctamente.");
-    } else {
-        UI.mostrarError("Error", "No se pudo eliminar. Puede tener registros asociados.");
-    }
-}
     // ── Columnas helper ──────────────────────────────────────
     private void col(String name, String prop, double w) {
         TableColumn<Usuario, ?> c = new TableColumn<>(name);
@@ -117,30 +132,47 @@ class UsuariosImpl extends VBox {
 
     private void colRol() {
         TableColumn<Usuario, String> c = new TableColumn<>("Rol");
-        c.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty(
-            ctrl.obtenerDescripcionRol(d.getValue().getRol())));
+        c.setCellValueFactory(d -> {
+            String rolCompleto = ctrl.obtenerDescripcionRol(d.getValue().getRol());
+            // ✅ Acortar texto para que quepa mejor
+            return new javafx.beans.property.SimpleStringProperty(
+                    rolCompleto.replace("Encargado de Estacionamiento", "Encargado")
+                            .replace("Administrador Global", "Admin Global"));
+        });
         c.setCellFactory(col -> new TableCell<>() {
-            @Override protected void updateItem(String v, boolean empty) {
+            @Override
+            protected void updateItem(String v, boolean empty) {
                 super.updateItem(v, empty);
-                if (empty || v == null) { setGraphic(null); return; }
+                if (empty || v == null) {
+                    setGraphic(null);
+                    return;
+                }
                 String estilo = switch (v) {
-                    case "Administrador Global"        -> UI.badgeBlue();
-                    case "Encargado de Estacionamiento"-> UI.badgeAmber();
-                    default                             -> UI.badgeGray();
+                    case "Admin Global" -> UI.badgeBlue();
+                    case "Encargado" -> UI.badgeAmber();
+                    default -> UI.badgeGray();
                 };
                 setGraphic(UI.badge(v, estilo));
             }
         });
-        c.setPrefWidth(180);
+        c.setPrefWidth(110);
         tabla.getColumns().add(c);
     }
 
     private void colEstacionamiento() {
         TableColumn<Usuario, String> c = new TableColumn<>("Estacionamiento");
         c.setCellValueFactory(d -> {
-            String nom = d.getValue().getNombreEstacionamiento();
+            Usuario u = d.getValue();
+            // Admin Global muestra "—"
+            if (u.getRol() == 1) {
+                return new javafx.beans.property.SimpleStringProperty("—");
+            }
+            String nom = u.getNombreEstacionamiento();
+            if (nom != null && nom.length() > 20) {
+                nom = nom.substring(0, 18) + "…";
+            }
             return new javafx.beans.property.SimpleStringProperty(
-                nom != null ? nom : (d.getValue().getEstacionamientoId() == null ? "Global" : "—"));
+                    nom != null ? nom : (u.getEstacionamientoId() == null ? "—" : "ID: " + u.getEstacionamientoId()));
         });
         c.setPrefWidth(160);
         tabla.getColumns().add(c);
@@ -149,11 +181,15 @@ class UsuariosImpl extends VBox {
     private void colEstado() {
         TableColumn<Usuario, String> c = new TableColumn<>("Estado");
         c.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty(
-            d.getValue().isActivo() ? "Activo" : "Inactivo"));
+                d.getValue().isActivo() ? "Activo" : "Inactivo"));
         c.setCellFactory(col -> new TableCell<>() {
-            @Override protected void updateItem(String v, boolean empty) {
+            @Override
+            protected void updateItem(String v, boolean empty) {
                 super.updateItem(v, empty);
-                if (empty || v == null) { setGraphic(null); return; }
+                if (empty || v == null) {
+                    setGraphic(null);
+                    return;
+                }
                 setGraphic(UI.badge(v, "Activo".equals(v) ? UI.badgeGreen() : UI.badgeRed()));
             }
         });
@@ -165,34 +201,48 @@ class UsuariosImpl extends VBox {
         boolean esAdmin = Session.getInstance().isAdmin();
         TableColumn<Usuario, Void> c = new TableColumn<>("Acciones");
         c.setCellFactory(col -> new TableCell<>() {
-            final Button btnEdit    = UI.btnSecundario("✏️ Editar");
-            final Button btnDesact  = UI.btnSecundario("🔒");
-            final Button btnPasswd  = UI.btnSecundario("🔑");
-            final Button btnElim    = UI.btnPeligro("🗑️");
+            final Button btnEdit = UI.btnSecundario("Editar");
+            final Button btnToggle = UI.btnSecundario("Estado");
+            final Button btnPasswd = UI.btnSecundario("Pass");
+            final Button btnDelete = UI.btnPeligro("Borrar");
             {
-                btnEdit.setStyle(btnEdit.getStyle()   + UI.BTN_SMALL);
-                btnDesact.setStyle(btnDesact.getStyle()+ UI.BTN_SMALL);
-                btnPasswd.setStyle(btnPasswd.getStyle()+ UI.BTN_SMALL);
+                btnEdit.setStyle(btnEdit.getStyle() + UI.BTN_SMALL);
+                btnToggle.setStyle(btnToggle.getStyle() + UI.BTN_SMALL);
+                btnPasswd.setStyle(btnPasswd.getStyle() + UI.BTN_SMALL);
+                btnDelete.setStyle(btnDelete.getStyle() + UI.BTN_SMALL);
+
+                btnEdit.setTooltip(new Tooltip("Editar empleado"));
+                btnToggle.setTooltip(new Tooltip("Activar o desactivar empleado"));
+                btnPasswd.setTooltip(new Tooltip("Cambiar contraseña"));
+                btnDelete.setTooltip(new Tooltip("Eliminar empleado"));
 
                 btnEdit.setOnAction(e -> formularioUsuario(getTableView().getItems().get(getIndex())));
-                btnDesact.setOnAction(e -> toggleActivo(getTableView().getItems().get(getIndex())));
+                btnToggle.setOnAction(e -> toggleActivo(getTableView().getItems().get(getIndex())));
                 btnPasswd.setOnAction(e -> formularioCambiarPassword(getTableView().getItems().get(getIndex())));
-                btnElim.setStyle(btnElim.getStyle() + UI.BTN_SMALL);
-                btnElim.setOnAction(e -> eliminarUsuario(getTableView().getItems().get(getIndex())));
+                btnDelete.setOnAction(e -> eliminarUsuario(getTableView().getItems().get(getIndex())));
             }
-            @Override protected void updateItem(Void v, boolean empty) {
+
+            @Override
+            protected void updateItem(Void v, boolean empty) {
                 super.updateItem(v, empty);
-                if (empty) { setGraphic(null); return; }
-                HBox h = new HBox(6);
+                if (empty) {
+                    setGraphic(null);
+                    return;
+                }
+                HBox h = new HBox(4);
                 h.setAlignment(Pos.CENTER_LEFT);
+                Usuario u = getTableView().getItems().get(getIndex());
+                btnToggle.setText(u.isActivo() ? "Desactivar" : "Activar");
+                btnToggle.setTooltip(new Tooltip(u.isActivo() ? "Desactivar empleado" : "Activar empleado"));
                 if (esAdmin) {
-                    Usuario u = getTableView().getItems().get(getIndex());
                     boolean esMismo = u.getId() == Session.getInstance().getUsuario().getId();
-                    h.getChildren().addAll(btnEdit, btnDesact, btnPasswd);
-                    if (!esMismo) h.getChildren().add(btnElim);
+                    h.getChildren().addAll(btnEdit, btnToggle, btnPasswd);
+                    if (!esMismo) {
+                        h.getChildren().add(btnDelete);
+                    } else {
+                        btnToggle.setDisable(true);
+                    }
                 } else {
-                    // Solo ve su propio perfil
-                    Usuario u = getTableView().getItems().get(getIndex());
                     if (u.getId() == Session.getInstance().getUsuario().getId()) {
                         h.getChildren().add(btnPasswd);
                     }
@@ -200,7 +250,7 @@ class UsuariosImpl extends VBox {
                 setGraphic(h);
             }
         });
-        c.setPrefWidth(240);
+        c.setPrefWidth(280);
         tabla.getColumns().add(c);
     }
 
@@ -208,34 +258,110 @@ class UsuariosImpl extends VBox {
     private void cargar() {
         try {
             if (Session.getInstance().isAdmin()) {
-                datos.setAll(ctrl.obtenerTodos());
+                List<Usuario> todos = ctrl.obtenerTodos();
+                todos.sort(Comparator.comparing(Usuario::isActivo).reversed()
+                        .thenComparing(u -> (u.getNombre() + " " + u.getApellido())));
+                datos.setAll(todos);
             } else {
-                // Encargado/Cajero solo se ve a sí mismo
                 Usuario yo = ctrl.obtenerUsuario(Session.getInstance().getUsuario().getId());
                 datos.setAll(yo != null ? List.of(yo) : List.of());
             }
-        } catch (Exception e) { UI.mostrarError("Error", e.getMessage()); }
+            aplicarFiltro();
+        } catch (Exception e) {
+            UI.mostrarError("Error", e.getMessage());
+        }
     }
 
-    private void filtrar(String q) {
+    private void aplicarFiltro() {
         try {
-            if (q == null || q.isBlank()) { cargar(); return; }
-            String lq = q.toLowerCase();
-            datos.setAll(ctrl.obtenerTodos().stream()
-                .filter(u -> (u.getNombre() + " " + u.getApellido()).toLowerCase().contains(lq)
-                          || u.getUsuario().toLowerCase().contains(lq)
-                          || (u.getEmail() != null && u.getEmail().toLowerCase().contains(lq)))
-                .toList());
-        } catch (Exception ex) { cargar(); }
+            String q = busqueda.getText();
+            String estado = filtroEstado.getValue();
+            String rol = filtroRol.getValue();
+
+            List<Usuario> base = Session.getInstance().isAdmin() ? ctrl.obtenerTodos() : new ArrayList<>(datos);
+
+            List<Usuario> filtrados = base.stream()
+                    .filter(u -> {
+                        if (estado != null) {
+                            if (estado.equals("Activos") && !u.isActivo())
+                                return false;
+                            if (estado.equals("Inactivos") && u.isActivo())
+                                return false;
+                        }
+                        if (rol != null && !rol.equals("Todos los roles")) {
+                            if (rol.equals("Administrador Global") && u.getRol() != 1)
+                                return false;
+                            if (rol.equals("Encargado") && u.getRol() != 2)
+                                return false;
+                            if (rol.equals("Cajero") && u.getRol() != 3)
+                                return false;
+                        }
+                        if (q == null || q.isBlank())
+                            return true;
+
+                        String textoBusqueda = q;
+                        String emailUsuario = u.getEmail();
+
+                        // 🔍 Búsqueda específica para emails (cuando contiene @)
+                        if (textoBusqueda.contains("@")) {
+                            if (emailUsuario == null)
+                                return false;
+                            // ✅ Coincidencia si el email EMPIEZA con el texto buscado
+                            // Ej: "A@" -> solo emails que empiezan con "A@"
+                            // "A@gmail.com" -> solo el que empieza exactamente así
+                            return emailUsuario.toLowerCase().startsWith(textoBusqueda.toLowerCase())
+                                    || emailUsuario.equalsIgnoreCase(textoBusqueda);
+                        }
+
+                        // 🔍 Búsqueda normal para cualquier otro texto
+                        String lq = textoBusqueda.toLowerCase();
+                        String nombreCompleto = (u.getNombre() + " " + u.getApellido()).toLowerCase();
+                        String estacionamiento = u.getNombreEstacionamiento() != null
+                                ? u.getNombreEstacionamiento().toLowerCase()
+                                : "";
+                        String rolTexto = ctrl.obtenerDescripcionRol(u.getRol()).toLowerCase();
+
+                        return nombreCompleto.contains(lq)
+                                || u.getUsuario().toLowerCase().contains(lq)
+                                || (emailUsuario != null && emailUsuario.toLowerCase().contains(lq))
+                                || estacionamiento.contains(lq)
+                                || rolTexto.contains(lq);
+                    })
+                    .collect(Collectors.toList());
+
+            datos.setAll(filtrados);
+        } catch (Exception ex) {
+            cargar();
+        }
     }
 
     private void toggleActivo(Usuario u) {
         String acc = u.isActivo() ? "desactivar" : "activar";
-        if (!UI.confirmar("Cambiar estado", "¿Deseas " + acc + " a " + u.getNombre() + "?")) return;
+        if (!UI.confirmar("Cambiar estado", "¿Deseas " + acc + " a " + u.getNombre() + "?"))
+            return;
         u.setActivo(!u.isActivo());
         boolean ok = ctrl.actualizarUsuario(u);
-        if (ok) cargar();
-        else UI.mostrarError("Error", "No se pudo cambiar el estado.");
+        if (ok) {
+            cargar();
+            UI.mostrarInfo("Estado actualizado",
+                    "El empleado ha sido " + (u.isActivo() ? "activado" : "desactivado") + " correctamente.");
+        } else {
+            UI.mostrarError("Error", "No se pudo cambiar el estado.");
+        }
+    }
+
+    private void eliminarUsuario(Usuario u) {
+        if (!UI.confirmar("Eliminar empleado",
+                "¿Estás seguro de eliminar a " + u.getNombre() + " " + u.getApellido() + "?"))
+            return;
+
+        boolean ok = ctrl.eliminarUsuario(u.getId());
+        if (ok) {
+            cargar();
+            UI.mostrarInfo("Empleado eliminado", "El empleado fue eliminado correctamente.");
+        } else {
+            UI.mostrarError("Error", "No se pudo eliminar el empleado.");
+        }
     }
 
     // ── Formulario crear/editar usuario ─────────────────────
@@ -252,27 +378,35 @@ class UsuariosImpl extends VBox {
         Label titulo = new Label(editar == null ? "➕ Nuevo usuario" : "✏️ Editar usuario");
         titulo.setFont(Font.font("System", FontWeight.BOLD, 15));
 
-        TextField fNombre   = UI.campo("Nombre");
+        TextField fNombre = UI.campo("Nombre");
         TextField fApellido = UI.campo("Apellido");
-        TextField fEmail    = UI.campo("correo@ejemplo.com");
-        TextField fUsuario  = UI.campo("nombre.usuario");
+        TextField fEmail = UI.campo("correo@ejemplo.com");
+        TextField fUsuario = UI.campo("nombre.usuario");
         PasswordField fPass = UI.campoPassword("Contraseña");
 
         ComboBox<String> comboRol = UI.combo();
         comboRol.getItems().addAll(
-            "1 - Administrador Global",
-            "2 - Encargado de Estacionamiento",
-            "3 - Cajero");
+                "1 - Administrador Global",
+                "2 - Encargado de Estacionamiento",
+                "3 - Cajero");
         comboRol.setValue("3 - Cajero");
 
         // Selector de estacionamiento
         ComboBox<Estacionamiento> comboEst = UI.combo();
         try {
             comboEst.getItems().addAll(estCtrl.obtenerTodosLosEstacionamientos());
-        } catch (Exception ex) { /* sin estacionamientos */ }
+        } catch (Exception ex) {
+            /* sin estacionamientos */ }
         comboEst.setConverter(new javafx.util.StringConverter<Estacionamiento>() {
-            @Override public String toString(Estacionamiento e) { return e != null ? e.getNombre() : ""; }
-            @Override public Estacionamiento fromString(String s) { return null; }
+            @Override
+            public String toString(Estacionamiento e) {
+                return e != null ? e.getNombre() : "";
+            }
+
+            @Override
+            public Estacionamiento fromString(String s) {
+                return null;
+            }
         });
         comboEst.setPromptText("Seleccionar estacionamiento…");
 
@@ -298,8 +432,8 @@ class UsuariosImpl extends VBox {
             cbActivo.setSelected(editar.isActivo());
             if (editar.getEstacionamientoId() != null) {
                 comboEst.getItems().stream()
-                    .filter(est -> est.getId() == editar.getEstacionamientoId())
-                    .findFirst().ifPresent(comboEst::setValue);
+                        .filter(est -> est.getId() == editar.getEstacionamientoId())
+                        .findFirst().ifPresent(comboEst::setValue);
             }
             boolean necesitaEst = editar.getRol() != 1;
             grupoEst.setVisible(necesitaEst);
@@ -310,20 +444,26 @@ class UsuariosImpl extends VBox {
         }
 
         GridPane grid = new GridPane();
-        grid.setHgap(12); grid.setVgap(12);
-        grid.add(UI.grupoCampo("Nombre *",   fNombre),   0, 0);
+        grid.setHgap(12);
+        grid.setVgap(12);
+        grid.add(UI.grupoCampo("Nombre *", fNombre), 0, 0);
         grid.add(UI.grupoCampo("Apellido *", fApellido), 1, 0);
-        grid.add(UI.grupoCampo("Email *",    fEmail),    0, 1);
-        grid.add(UI.grupoCampo("Usuario *",  fUsuario),  1, 1);
+        grid.add(UI.grupoCampo("Email *", fEmail), 0, 1);
+        grid.add(UI.grupoCampo("Usuario *", fUsuario), 1, 1);
         grid.add(UI.grupoCampo("Contraseña" + (editar == null ? " *" : ""), fPass), 0, 2);
-        grid.add(UI.grupoCampo("Rol *",      comboRol),  1, 2);
-        grid.add(grupoEst,                               0, 3, 2, 1);
-        grid.add(cbActivo,                               0, 4, 2, 1);
-        ColumnConstraints cc = new ColumnConstraints(); cc.setPercentWidth(50);
-        grid.getColumnConstraints().addAll(cc, new ColumnConstraints() {{ setPercentWidth(50); }});
+        grid.add(UI.grupoCampo("Rol *", comboRol), 1, 2);
+        grid.add(grupoEst, 0, 3, 2, 1);
+        grid.add(cbActivo, 0, 4, 2, 1);
+        ColumnConstraints cc = new ColumnConstraints();
+        cc.setPercentWidth(50);
+        grid.getColumnConstraints().addAll(cc, new ColumnConstraints() {
+            {
+                setPercentWidth(50);
+            }
+        });
 
         Label err = UI.errorLabel();
-        Button guardar  = UI.btnPrimario(editar == null ? "Crear usuario" : "Actualizar");
+        Button guardar = UI.btnPrimario(editar == null ? "Crear usuario" : "Actualizar");
         Button cancelar = UI.btnSecundario("Cancelar");
         cancelar.setOnAction(e -> ven.close());
 
@@ -335,12 +475,10 @@ class UsuariosImpl extends VBox {
             u.setUsuario(fUsuario.getText().trim());
             u.setActivo(cbActivo.isSelected());
 
-            // Extraer número de rol
             String rolStr = comboRol.getValue();
             int rol = rolStr != null && !rolStr.isBlank() ? Integer.parseInt(rolStr.substring(0, 1)) : 0;
             u.setRol(rol);
 
-            // Estacionamiento
             if (rol == 1) {
                 u.setEstacionamientoId(null);
             } else {
@@ -348,21 +486,33 @@ class UsuariosImpl extends VBox {
                 u.setEstacionamientoId(sel != null ? sel.getId() : null);
             }
 
-            // Contraseña
             String pass = fPass.getText();
             if (editar == null) {
-                if (pass.isBlank()) { UI.setError(err, "La contraseña es obligatoria para nuevos usuarios."); return; }
+                if (pass.isBlank()) {
+                    UI.setError(err, "La contraseña es obligatoria para nuevos usuarios.");
+                    return;
+                }
                 u.setContrasena(pass);
             } else {
-                if (!pass.isBlank()) u.setContrasena(pass);
+                if (!pass.isBlank())
+                    u.setContrasena(pass);
             }
 
             String error = ctrl.validarUsuario(u);
-            if (error != null && editar == null) { UI.setError(err, error); return; }
+            if (error != null && editar == null) {
+                UI.setError(err, error);
+                return;
+            }
 
             boolean ok = editar == null ? ctrl.crearUsuario(u) : ctrl.actualizarUsuario(u);
-            if (ok) { cargar(); ven.close(); }
-            else UI.setError(err, "Error al guardar. Verifica los datos e intenta de nuevo.");
+            if (ok) {
+                cargar();
+                ven.close();
+                UI.mostrarInfo("Éxito",
+                        editar == null ? "Empleado creado correctamente." : "Empleado actualizado correctamente.");
+            } else {
+                UI.setError(err, "Error al guardar. Verifica los datos e intenta de nuevo.");
+            }
         });
 
         HBox bRow = new HBox(10, cancelar, guardar);
@@ -383,46 +533,51 @@ class UsuariosImpl extends VBox {
         cont.setPadding(new Insets(24));
         cont.setPrefWidth(380);
 
-        Label titulo = new Label("🔑 Cambiar contraseña — " + u.getNombre());
+        Label titulo = new Label("🔐 Cambiar contraseña — " + u.getNombre());
         titulo.setFont(Font.font("System", FontWeight.BOLD, 14));
 
-        PasswordField fNueva    = UI.campoPassword("Nueva contraseña");
-        PasswordField fConfirm  = UI.campoPassword("Confirmar contraseña");
+        PasswordField fNueva = UI.campoPassword("Nueva contraseña");
+        PasswordField fConfirm = UI.campoPassword("Confirmar contraseña");
 
-        Label err     = UI.errorLabel();
-        Button guardar  = UI.btnPrimario("Cambiar contraseña");
+        Label err = UI.errorLabel();
+        Button guardar = UI.btnPrimario("Cambiar contraseña");
         Button cancelar = UI.btnSecundario("Cancelar");
         cancelar.setOnAction(e -> ven.close());
 
         guardar.setOnAction(e -> {
-            String nueva   = fNueva.getText();
+            String nueva = fNueva.getText();
             String confirm = fConfirm.getText();
-            if (nueva.isBlank()) { UI.setError(err, "La nueva contraseña es obligatoria."); return; }
-            if (nueva.length() < 6) { UI.setError(err, "La contraseña debe tener al menos 6 caracteres."); return; }
-            if (!nueva.equals(confirm)) { UI.setError(err, "Las contraseñas no coinciden."); return; }
+            if (nueva.isBlank()) {
+                UI.setError(err, "La nueva contraseña es obligatoria.");
+                return;
+            }
+            if (nueva.length() < 6) {
+                UI.setError(err, "La contraseña debe tener al menos 6 caracteres.");
+                return;
+            }
+            if (!nueva.equals(confirm)) {
+                UI.setError(err, "Las contraseñas no coinciden.");
+                return;
+            }
 
             u.setContrasena(nueva);
             boolean ok = ctrl.actualizarUsuario(u);
-            if (ok) { UI.mostrarInfo("Éxito", "Contraseña actualizada correctamente."); ven.close(); }
-            else UI.setError(err, "Error al actualizar la contraseña.");
+            if (ok) {
+                UI.mostrarInfo("Éxito", "Contraseña actualizada correctamente.");
+                ven.close();
+            } else
+                UI.setError(err, "Error al actualizar la contraseña.");
         });
 
         HBox bRow = new HBox(10, cancelar, guardar);
         bRow.setAlignment(Pos.CENTER_RIGHT);
         cont.getChildren().addAll(
-            titulo, UI.separador(),
-            UI.grupoCampo("Nueva contraseña *", fNueva),
-            UI.grupoCampo("Confirmar contraseña *", fConfirm),
-            err, UI.separador(), bRow
-        );
+                titulo, UI.separador(),
+                UI.grupoCampo("Nueva contraseña *", fNueva),
+                UI.grupoCampo("Confirmar contraseña *", fConfirm),
+                err, UI.separador(), bRow);
         ven.setScene(new Scene(cont));
         ven.showAndWait();
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-//  CONVENIOS  –  Integración del módulo de convenios en la UI
-//  Requiere que el DAO/Controller de ConvenioRestaurante exista.
-//  Si el equipo aún no lo implementó, la clase muestra un
-//  mensaje de "módulo pendiente de integración" sin romper la app.
-// ─────────────────────────────────────────────────────────────
