@@ -88,6 +88,44 @@ public class RegistroEntradaSalidaDAO {
         }
     }
 
+    public int crearRetornandoId(RegistroEntradaSalida registro) {
+        String sql =
+            "INSERT INTO registros_entrada_salida " +
+            "(vehiculo_id, cajon_id, fecha_entrada, estado, promocion_aplicada, estacionamiento_id) " +
+            "VALUES (?, ?, ?, ?, ?, ?)";
+
+        try (PreparedStatement pstmt = conexion.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            if (registro.getEstado() == null || registro.getEstado().trim().isEmpty()) {
+                registro.setEstado("Activo");
+            }
+
+            pstmt.setInt(1, registro.getVehiculoId());
+            pstmt.setInt(2, registro.getCajonId());
+            pstmt.setTimestamp(3, Timestamp.valueOf(registro.getFechaEntrada()));
+            pstmt.setString(4, registro.getEstado());
+            if (registro.getPromocionAplicada() != null) {
+                pstmt.setString(5, registro.getPromocionAplicada());
+            } else {
+                pstmt.setNull(5, Types.VARCHAR);
+            }
+            pstmt.setInt(6, registro.getEstacionamientoId());
+
+            int filas = pstmt.executeUpdate();
+            if (filas > 0) {
+                try (ResultSet keys = pstmt.getGeneratedKeys()) {
+                    if (keys.next()) {
+                        int id = keys.getInt(1);
+                        registro.setId(id);
+                        return id;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al crear registro y obtener ID: " + e.getMessage());
+        }
+        return -1;
+    }
+
     public RegistroEntradaSalida obtenerPorId(int id) {
 
         String sql =
@@ -130,6 +168,35 @@ public class RegistroEntradaSalidaDAO {
 
         } catch (SQLException e) {
             System.err.println("Error al obtener registro: " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    public RegistroEntradaSalida obtenerActivoPorCajon(
+            int cajonId,
+            int estacionamientoId
+    ) {
+
+        String sql =
+            "SELECT * FROM registros_entrada_salida " +
+            "WHERE cajon_id = ? AND estacionamiento_id = ? " +
+            "AND estado = 'Activo' LIMIT 1";
+
+        try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
+
+            pstmt.setInt(1, cajonId);
+            pstmt.setInt(2, estacionamientoId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+
+                if (rs.next()) {
+                    return mapearResultSet(rs);
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error al obtener registro por cajon: " + e.getMessage());
         }
 
         return null;

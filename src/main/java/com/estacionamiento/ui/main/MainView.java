@@ -38,6 +38,8 @@ public class MainView extends BorderPane {
 
     private final Label clockLabel;
 
+    private Label estacionamientoLabel;
+
     private final StackPane contentArea;
 
     private final NotificacionController notifCtrl = new NotificacionController();
@@ -122,9 +124,9 @@ public class MainView extends BorderPane {
                         "-fx-font-size:13px;" +
                         "-fx-font-weight:bold;");
 
-        Label lblEst = new Label("Estacionamiento:");
+        estacionamientoLabel = new Label("Estacionamiento:");
 
-        lblEst.setStyle(
+        estacionamientoLabel.setStyle(
                 "-fx-text-fill:" + UI.MUTED + ";" +
                         "-fx-font-size:12px;");
 
@@ -149,7 +151,7 @@ public class MainView extends BorderPane {
         derecha.setAlignment(Pos.CENTER_RIGHT);
 
         derecha.getChildren().addAll(
-                lblEst,
+                estacionamientoLabel,
                 comboEstacionamiento,
                 userInfo,
                 clockLabel);
@@ -248,6 +250,7 @@ public class MainView extends BorderPane {
         moduloActual = modulo;
 
         titleLabel.setText(modulo.etiqueta);
+        actualizarVisibilidadSelectorEstacionamiento(modulo);
 
         javafx.scene.Node vista = switch (modulo) {
             case DASHBOARD -> new DashboardModule();
@@ -272,6 +275,18 @@ public class MainView extends BorderPane {
         };
 
         contentArea.getChildren().setAll(vista);
+    }
+
+    private void actualizarVisibilidadSelectorEstacionamiento(Sidebar.Modulo modulo) {
+        boolean visible = switch (modulo) {
+            case CORREO_RECORDATORIO, USUARIOS, NOTIFICACIONES, CONFIGURACION -> false;
+            default -> true;
+        };
+
+        estacionamientoLabel.setVisible(visible);
+        estacionamientoLabel.setManaged(visible);
+        comboEstacionamiento.setVisible(visible);
+        comboEstacionamiento.setManaged(visible);
     }
 
     /**

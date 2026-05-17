@@ -4,10 +4,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.estacionamiento.dao.CajonDAO;
+import com.estacionamiento.dao.ClienteDAO;
 import com.estacionamiento.dao.EstacionamientoDAO;
 import com.estacionamiento.dao.PrecioDAO;
 import com.estacionamiento.dao.RegistroEntradaSalidaDAO;
 import com.estacionamiento.dao.VehiculoDAO;
+import com.estacionamiento.modelos.Cliente;
 import com.estacionamiento.modelos.HistorialEvento;
 import com.estacionamiento.modelos.Pension;
 import com.estacionamiento.modelos.Precio;
@@ -25,6 +27,7 @@ public class RegistroController {
     private final PrecioDAO precioDAO;
     private final CajonDAO cajonDAO;
     private final EstacionamientoDAO estacionamientoDAO;
+    private final ClienteDAO clienteDAO;
     private final VehiculoDAO vehiculoDAO;
     private final PromocionController promocionController;
     private final HistorialController historialController;
@@ -36,10 +39,168 @@ public class RegistroController {
         this.precioDAO = new PrecioDAO();
         this.cajonDAO = new CajonDAO();
         this.estacionamientoDAO = new EstacionamientoDAO();
+        this.clienteDAO = new ClienteDAO();
         this.vehiculoDAO = new VehiculoDAO();
         this.promocionController = new PromocionController();
         this.historialController = new HistorialController();
         this.pensionController = new PensionController();
+    }
+
+    public Vehiculo registrarEntradaPorPlaca(
+            String placa,
+            String tipoVehiculo,
+            String marca,
+            String modelo,
+            String color,
+            int cajonId,
+            int estacionamientoId
+    ) throws Exception {
+
+        String placaNormalizada = normalizarPlaca(placa);
+
+        if (placaNormalizada.isBlank()) {
+            throw new Exception("La placa es obligatoria.");
+        }
+
+        Vehiculo vehiculo = vehiculoDAO.obtenerPorPatente(placaNormalizada);
+
+        if (vehiculo == null) {
+            Cliente cliente = obtenerOCrearClienteAutomatico(placaNormalizada);
+
+            vehiculo = new Vehiculo();
+            vehiculo.setPatente(placaNormalizada);
+            vehiculo.setTipo(valorONull(tipoVehiculo) != null ? tipoVehiculo.trim() : "Auto");
+            vehiculo.setMarca(valorONull(marca));
+            vehiculo.setModelo(valorONull(modelo));
+            vehiculo.setColor(valorONull(color));
+            vehiculo.setClienteId(cliente.getId());
+            vehiculo.setActivo(true);
+
+            if (!vehiculoDAO.crear(vehiculo) || vehiculo.getId() <= 0) {
+                throw new Exception("No se pudo registrar el vehiculo.");
+            }
+        } else {
+            boolean cambio = false;
+
+            if (valorONull(marca) != null && valorONull(vehiculo.getMarca()) == null) {
+                vehiculo.setMarca(marca.trim());
+                cambio = true;
+            }
+            if (valorONull(modelo) != null && valorONull(vehiculo.getModelo()) == null) {
+                vehiculo.setModelo(modelo.trim());
+                cambio = true;
+            }
+            if (valorONull(color) != null && valorONull(vehiculo.getColor()) == null) {
+                vehiculo.setColor(color.trim());
+                cambio = true;
+            }
+            if (valorONull(tipoVehiculo) != null &&
+                    (valorONull(vehiculo.getTipo()) == null ||
+                     !vehiculo.getTipo().equalsIgnoreCase(tipoVehiculo.trim()))) {
+                vehiculo.setTipo(tipoVehiculo.trim());
+                cambio = true;
+            }
+            if (cambio) {
+                vehiculoDAO.actualizar(vehiculo);
+            }
+        }
+
+        Pension pension = pensionController.obtenerPensionPorVehiculo(vehiculo.getId());
+        if (pension != null && pension.getEstacionamientoId() == estacionamientoId) {
+            if (pensionController.esPensionVencida(pension)) {
+                throw new Exception(
+                    "La pensiÃ³n asignada al vehÃ­culo estÃ¡ vencida. " +
+                    "Renueve la pensiÃ³n antes de registrar una nueva entrada."
+                );
+            }
+            cajonId = pension.getCajonId();
+        }
+
+        if (cajonId <= 0) {
+            throw new Exception("Debe seleccionar un cajon disponible o usar una placa con pension activa.");
+        }
+
+        registrarEntrada(vehiculo.getId(), cajonId, estacionamientoId);
+        return vehiculo;
+    }
+
+    public RegistroEntradaSalida registrarSalidaPorPlaca(
+            String placa,
+            int estacionamientoId
+    ) throws Exception {
+        String placaNormalizada = normalizarPlaca(placa);
+        if (placaNormalizada.isBlank()) {
+            throw new Exception("La placa es obligatoria.");
+        }
+
+        Vehiculo vehiculo = vehiculoDAO.obtenerPorPatente(placaNormalizada);
+        if (vehiculo == null) {
+            throw new Exception("No existe un vehiculo registrado con esa placa.");
+        }
+
+        String tipo = vehiculo.getTipo() != null ? vehiculo.getTipo() : "Auto";
+        return registrarSalida(vehiculo.getId(), tipo, estacionamientoId);
+    }
+
+    public RegistroEntradaSalida registrarSalidaPorCajon(
+            int cajonId,
+            int estacionamientoId
+    ) {
+        RegistroEntradaSalida activo =
+                registroDAO.obtenerActivoPorCajon(cajonId, estacionamientoId);
+
+        if (activo == null) {
+            return null;
+        }
+
+        Vehiculo vehiculo = vehiculoDAO.obtenerPorId(activo.getVehiculoId());
+        String tipo = vehiculo != null && vehiculo.getTipo() != null
+                ? vehiculo.getTipo()
+                : "Auto";
+
+        return registrarSalida(activo.getVehiculoId(), tipo, estacionamientoId);
+    }
+
+    public RegistroEntradaSalida obtenerRegistroActivoPorCajon(
+            int cajonId,
+            int estacionamientoId
+    ) {
+        return registroDAO.obtenerActivoPorCajon(cajonId, estacionamientoId);
+    }
+
+    private Cliente obtenerOCrearClienteAutomatico(String placaNormalizada)
+            throws Exception {
+
+        String documento = "AUTO-" + placaNormalizada;
+        Cliente cliente = clienteDAO.obtenerPorDocumento(documento);
+
+        if (cliente != null) {
+            return cliente;
+        }
+
+        cliente = new Cliente();
+        cliente.setNombre("Cliente");
+        cliente.setApellido(placaNormalizada);
+        cliente.setNumeroDocumento(documento);
+        cliente.setTipoDocumento("PLACA");
+        cliente.setCiudad("");
+        cliente.setEmail("");
+        cliente.setTelefono("");
+        cliente.setActivo(true);
+
+        if (!clienteDAO.crear(cliente) || cliente.getId() <= 0) {
+            throw new Exception("No se pudo registrar el cliente automatico.");
+        }
+
+        return cliente;
+    }
+
+    private String normalizarPlaca(String placa) {
+        return placa == null ? "" : placa.trim().toUpperCase();
+    }
+
+    private String valorONull(String valor) {
+        return valor == null || valor.trim().isBlank() ? null : valor.trim();
     }
 
     /**
@@ -108,7 +269,7 @@ public class RegistroController {
         if (registroDAO.crear(registro)) {
 
             // Cambiar estado del cajón
-            cajonDAO.cambiarEstado(cajonId, "Ocupado");
+            cajonDAO.cambiarEstado(cajonId, "ocupado");
 
             // Actualizar cajones disponibles
             int disponibles =
@@ -301,9 +462,22 @@ public class RegistroController {
         )) {
 
             // Liberar cajón
+            String estadoCajon = "libre";
+            try {
+                Pension pension = pensionController.obtenerPensionPorVehiculo(vehiculoId);
+                if (pension != null &&
+                    pension.getCajonId() == registro.getCajonId() &&
+                    pension.getEstacionamientoId() == estacionamientoId &&
+                    !pensionController.esPensionVencida(pension)) {
+                    estadoCajon = "pensionado";
+                }
+            } catch (Exception e) {
+                System.err.println("No se pudo validar pension al liberar cajon: " + e.getMessage());
+            }
+
             cajonDAO.cambiarEstado(
                     registro.getCajonId(),
-                    "Disponible"
+                    estadoCajon
             );
 
             // Actualizar disponibles

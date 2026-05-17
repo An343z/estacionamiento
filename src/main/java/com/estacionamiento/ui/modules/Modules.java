@@ -412,7 +412,7 @@ class ClientesImpl extends VBox {
 // ─────────────────────────────────────────────────────────────
 class VehiculosImpl extends VBox {
 
-    private final ClienteController ctrl = new ClienteController();
+    private final VehiculoController ctrl = new VehiculoController();
     private ObservableList<Vehiculo> datos;
     private TableView<Vehiculo> tabla;
 
@@ -420,109 +420,46 @@ class VehiculosImpl extends VBox {
         setPadding(new Insets(24, 28, 24, 28));
         setSpacing(16);
         setStyle("-fx-background-color:" + UI.BG + ";");
-        construir(); cargar();
+        construir();
+        cargar();
     }
 
     private void construir() {
-        Button btnNuevo = UI.btnPrimario("+ Nuevo vehículo");
-        btnNuevo.setOnAction(e -> formulario(null));
-
-        tabla = new TableView<>(); UI.estilizarTabla(tabla);
-        datos = FXCollections.observableArrayList(); tabla.setItems(datos);
+        tabla = new TableView<>();
+        UI.estilizarTabla(tabla);
+        datos = FXCollections.observableArrayList();
+        tabla.setItems(datos);
         VBox.setVgrow(tabla, Priority.ALWAYS);
 
-        col("ID", "id", 60); col("Patente", "patente", 120); col("Marca", "marca", 120);
-        col("Modelo", "modelo", 120); col("Color", "color", 100);
-        col("Tipo", "tipo", 100);
+        col("ID", "id", 70);
+        col("Placa", "patente", 130);
+        col("Tipo", "tipo", 110);
+        col("Color", "color", 120);
+        col("Marca", "marca", 130);
+        col("Modelo", "modelo", 130);
+        col("Cliente ID", "clienteId", 100);
 
-        TableColumn<Vehiculo, Void> colAcc = new TableColumn<>("Acciones");
-        colAcc.setCellFactory(col -> new TableCell<>() {
-            final Button e = UI.btnSecundario("✏️"); final Button d = UI.btnPeligro("🗑️");
-            { e.setStyle(e.getStyle()+UI.BTN_SMALL); d.setStyle(d.getStyle()+UI.BTN_SMALL);
-              e.setOnAction(ev -> formulario(getTableView().getItems().get(getIndex())));
-              d.setOnAction(ev -> { Vehiculo v=getTableView().getItems().get(getIndex());
-                  if (UI.confirmar("Eliminar","¿Eliminar "+v.getPatente()+"?")) {ctrl.eliminarVehiculo(v.getId());cargar();}
-              }); }
-            @Override protected void updateItem(Void v, boolean empty) {
-                super.updateItem(v,empty); if(empty){setGraphic(null);return;}
-                HBox h=new HBox(6,e,d);h.setAlignment(Pos.CENTER_LEFT);setGraphic(h);
-            }
-        }); colAcc.setPrefWidth(120); tabla.getColumns().add(colAcc);
-        tabla.setPlaceholder(UI.panelVacio("🚗","No hay vehículos"));
-
-        getChildren().addAll(UI.encabezado("Vehículos","Vehículos registrados",btnNuevo), tabla);
+        tabla.setPlaceholder(UI.panelVacio("Auto", "No hay vehiculos con historial"));
+        getChildren().addAll(UI.encabezado("Vehiculos", "Historial de vehiculos que han entrado"), tabla);
     }
 
     private void col(String name, String prop, double w) {
-        TableColumn<Vehiculo,?> c = new TableColumn<>(name);
-        c.setCellValueFactory(new PropertyValueFactory<>(prop)); c.setPrefWidth(w);
+        TableColumn<Vehiculo, ?> c = new TableColumn<>(name);
+        c.setCellValueFactory(new PropertyValueFactory<>(prop));
+        c.setPrefWidth(w);
         tabla.getColumns().add(c);
     }
 
     private void cargar() {
-        try { datos.setAll(ctrl.obtenerTodosLosVehiculos()); }
-        catch (Exception e) { UI.mostrarError("Error", e.getMessage()); }
-    }
-
-    private void formulario(Vehiculo editar) {
-        Stage v = new Stage(); v.initModality(Modality.APPLICATION_MODAL);
-        v.setTitle(editar==null?"Nuevo vehículo":"Editar vehículo"); v.setResizable(false);
-
-        VBox cont = new VBox(14); cont.setPadding(new Insets(24)); cont.setPrefWidth(440);
-        Label titulo = new Label(editar==null?"➕ Nuevo vehículo":"✏️ Editar vehículo");
-        titulo.setFont(Font.font("System",FontWeight.BOLD,15));
-
-        TextField fPatente = UI.campo("ABC-123");
-        TextField fMarca   = UI.campo("Toyota");
-        TextField fModelo  = UI.campo("Corolla");
-        TextField fColor   = UI.campo("Blanco");
-        TextField fCliente = UI.campo("ID del cliente");
-        ComboBox<String> comboTipo = UI.combo();
-        comboTipo.getItems().addAll("Auto","Moto","Camioneta"); comboTipo.setValue("Auto");
-
-        if (editar != null) {
-            fPatente.setText(editar.getPatente()); fPatente.setDisable(true);
-            fMarca.setText(editar.getMarca()); fModelo.setText(editar.getModelo());
-            fColor.setText(editar.getColor()); fCliente.setText(String.valueOf(editar.getClienteId()));
-            comboTipo.setValue(editar.getTipo());
+        try {
+            datos.setAll(ctrl.obtenerVehiculosConHistorial());
+        } catch (Exception e) {
+            UI.mostrarError("Error", e.getMessage());
         }
-
-        GridPane grid = new GridPane(); grid.setHgap(12); grid.setVgap(12);
-        grid.add(UI.grupoCampo("Patente *",fPatente), 0,0);
-        grid.add(UI.grupoCampo("Tipo *",comboTipo),   1,0);
-        grid.add(UI.grupoCampo("Marca *",fMarca),     0,1);
-        grid.add(UI.grupoCampo("Modelo",fModelo),     1,1);
-        grid.add(UI.grupoCampo("Color *",fColor),     0,2);
-        grid.add(UI.grupoCampo("ID Cliente",fCliente),1,2);
-        ColumnConstraints cc=new ColumnConstraints(); cc.setPercentWidth(50);
-        grid.getColumnConstraints().addAll(cc, new ColumnConstraints(){{setPercentWidth(50);}});
-
-        Label err = UI.errorLabel();
-        Button guardar = UI.btnPrimario(editar==null?"Guardar":"Actualizar");
-        Button cancelar = UI.btnSecundario("Cancelar"); cancelar.setOnAction(e->v.close());
-
-        guardar.setOnAction(e -> {
-            Vehiculo veh = editar!=null ? editar : new Vehiculo();
-            veh.setPatente(fPatente.getText().trim()); veh.setMarca(fMarca.getText().trim());
-            veh.setModelo(fModelo.getText().trim()); veh.setColor(fColor.getText().trim());
-            veh.setTipo(comboTipo.getValue()); veh.setActivo(true);
-            try { veh.setClienteId(Integer.parseInt(fCliente.getText().trim())); }
-            catch(NumberFormatException ex){ UI.setError(err,"El ID de cliente debe ser un número."); return; }
-
-            String error = ctrl.validarVehiculo(veh);
-            if (error!=null){ UI.setError(err,error); return; }
-
-            boolean ok = editar==null ? ctrl.crearVehiculo(veh) : ctrl.actualizarVehiculo(veh);
-            if (ok){ cargar(); v.close(); } else UI.setError(err,"Error al guardar.");
-        });
-
-        HBox bRow=new HBox(10,cancelar,guardar); bRow.setAlignment(Pos.CENTER_RIGHT);
-        cont.getChildren().addAll(titulo,UI.separador(),grid,err,UI.separador(),bRow);
-        v.setScene(new Scene(cont)); v.showAndWait();
     }
 }
 
-// ─────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 //  CAJONES
 // ─────────────────────────────────────────────────────────────
 class CajonesImpl extends VBox {
@@ -804,296 +741,580 @@ class EstacionamientosImpl extends VBox {
 class RegistrosImpl extends VBox {
 
     private final RegistroController ctrl = new RegistroController();
-    private final ClienteController cliCtrl = new ClienteController();
+    private final VehiculoController vehCtrl = new VehiculoController();
+    private final CajonController cajonCtrl = new CajonController();
+    private final ConvenioController convenioCtrl = new ConvenioController();
+    private final CajaController cajaCtrl = new CajaController();
     private ObservableList<RegistroEntradaSalida> datos;
     private TableView<RegistroEntradaSalida> tabla;
     private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     RegistrosImpl() {
-        setPadding(new Insets(24,28,24,28)); setSpacing(16);
-        setStyle("-fx-background-color:"+UI.BG+";");
-        construir(); cargar();
+        setPadding(new Insets(24, 28, 24, 28));
+        setSpacing(16);
+        setStyle("-fx-background-color:" + UI.BG + ";");
+        construir();
+        cargar();
     }
 
     private void construir() {
-        // Panel de acción rápida
-        VBox cardAccion = crearPanelAccion();
+        HBox acciones = new HBox(14);
+        acciones.setAlignment(Pos.CENTER_LEFT);
+        acciones.setPadding(new Insets(18));
+        acciones.setStyle(UI.CARD);
 
-        // Tabla de registros del día
-        tabla=new TableView<>(); UI.estilizarTabla(tabla);
-        datos=FXCollections.observableArrayList(); tabla.setItems(datos);
-        tabla.setPrefHeight(350);
+        Button btnEntrada = UI.btnPrimario("Registrar entrada");
+        Button btnSalida = UI.btnPeligro("Registrar salida");
+        btnEntrada.setPrefWidth(180);
+        btnSalida.setPrefWidth(180);
+        btnEntrada.setOnAction(e -> formularioEntrada());
+        btnSalida.setOnAction(e -> formularioSalida());
+        acciones.getChildren().addAll(btnEntrada, btnSalida);
 
-        TableColumn<RegistroEntradaSalida,Integer> colId=new TableColumn<>("ID");
-        colId.setCellValueFactory(new PropertyValueFactory<>("id")); colId.setPrefWidth(50);
-        TableColumn<RegistroEntradaSalida,Integer> colVeh=new TableColumn<>("Vehículo ID");
+        tabla = new TableView<>();
+        UI.estilizarTabla(tabla);
+        datos = FXCollections.observableArrayList();
+        tabla.setItems(datos);
+        VBox.setVgrow(tabla, Priority.ALWAYS);
+
+        TableColumn<RegistroEntradaSalida, Integer> colId = new TableColumn<>("ID");
+        colId.setCellValueFactory(new PropertyValueFactory<>("id"));
+        colId.setPrefWidth(55);
+        TableColumn<RegistroEntradaSalida, Integer> colVeh = new TableColumn<>("Vehiculo ID");
         colVeh.setCellValueFactory(new PropertyValueFactory<>("vehiculoId"));
-        TableColumn<RegistroEntradaSalida,Integer> colCaj=new TableColumn<>("Cajón ID");
+        TableColumn<RegistroEntradaSalida, Integer> colCaj = new TableColumn<>("Cajon ID");
         colCaj.setCellValueFactory(new PropertyValueFactory<>("cajonId"));
-        TableColumn<RegistroEntradaSalida,String> colEnt=new TableColumn<>("Entrada");
-        colEnt.setCellValueFactory(c->new javafx.beans.property.SimpleStringProperty(
-            c.getValue().getFechaEntrada()!=null?c.getValue().getFechaEntrada().format(fmt):""));
-        TableColumn<RegistroEntradaSalida,String> colSal=new TableColumn<>("Salida");
-        colSal.setCellValueFactory(c->new javafx.beans.property.SimpleStringProperty(
-            c.getValue().getFechaSalida()!=null?c.getValue().getFechaSalida().format(fmt):"En curso"));
-        TableColumn<RegistroEntradaSalida,String> colMonto=new TableColumn<>("Monto");
-        colMonto.setCellValueFactory(c->new javafx.beans.property.SimpleStringProperty(
-            c.getValue().getMonto()>0?String.format("$%.2f",c.getValue().getMonto()):c.getValue().getFechaSalida()!=null?"$0.00":"-"));
-        TableColumn<RegistroEntradaSalida,String> colPromo=new TableColumn<>("Promoción");
-        colPromo.setCellValueFactory(c->new javafx.beans.property.SimpleStringProperty(
-            c.getValue().getPromocionAplicada()!=null?c.getValue().getPromocionAplicada():"-"));
+        TableColumn<RegistroEntradaSalida, String> colEnt = new TableColumn<>("Entrada");
+        colEnt.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(
+                c.getValue().getFechaEntrada() != null ? c.getValue().getFechaEntrada().format(fmt) : ""));
+        TableColumn<RegistroEntradaSalida, String> colSal = new TableColumn<>("Salida");
+        colSal.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(
+                c.getValue().getFechaSalida() != null ? c.getValue().getFechaSalida().format(fmt) : "En curso"));
+        TableColumn<RegistroEntradaSalida, String> colMonto = new TableColumn<>("Monto");
+        colMonto.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(
+                c.getValue().getFechaSalida() != null ? String.format("$%.2f", c.getValue().getMonto()) : "-"));
+        TableColumn<RegistroEntradaSalida, String> colPromo = new TableColumn<>("Convenio/Promocion");
+        colPromo.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(
+                c.getValue().getPromocionAplicada() != null ? c.getValue().getPromocionAplicada() : "-"));
         colPromo.setPrefWidth(180);
-        TableColumn<RegistroEntradaSalida,String> colEst=new TableColumn<>("Estado");
+        TableColumn<RegistroEntradaSalida, String> colEst = new TableColumn<>("Estado");
         colEst.setCellValueFactory(new PropertyValueFactory<>("estado"));
-        colEst.setCellFactory(col->new TableCell<>(){
-            @Override protected void updateItem(String v,boolean empty){
-                super.updateItem(v,empty); if(empty||v==null){setGraphic(null);return;}
-                setGraphic(UI.badge(v,"Activo".equals(v)?UI.badgeBlue():UI.badgeGreen()));
+        colEst.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(String v, boolean empty) {
+                super.updateItem(v, empty);
+                if (empty || v == null) { setGraphic(null); return; }
+                setGraphic(UI.badge(v, "Activo".equals(v) ? UI.badgeBlue() : UI.badgeGreen()));
             }
         });
 
-        tabla.getColumns().addAll(colId,colVeh,colCaj,colEnt,colSal,colMonto,colPromo,colEst);
-        tabla.setPlaceholder(UI.panelVacio("🚗","No hay registros"));
+        tabla.getColumns().addAll(colId, colVeh, colCaj, colEnt, colSal, colMonto, colPromo, colEst);
+        tabla.setPlaceholder(UI.panelVacio("Movimientos", "No hay registros"));
 
-        getChildren().addAll(UI.encabezado("Entrada / Salida","Registro de movimientos del estacionamiento"),
-                cardAccion, tabla);
+        getChildren().addAll(UI.encabezado("Entrada / Salida", "Registro de movimientos del estacionamiento"), acciones, tabla);
     }
 
-    private VBox crearPanelAccion() {
-        VBox card=new VBox(14); card.setStyle(UI.CARD); card.setPadding(new Insets(20));
-        Label titulo=new Label("Registrar movimiento");
-        titulo.setFont(Font.font("System",FontWeight.BOLD,13));
+    private void formularioEntrada() {
+        Integer estId = estacionamientoActual();
+        if (estId == null) return;
 
-        HBox fila=new HBox(14);
-        TextField fVehId=UI.campo("ID del vehículo");
-        TextField fCajId=UI.campo("ID del cajón");
-        ComboBox<String> comboTipo=UI.combo();
-        comboTipo.getItems().addAll("Auto","Moto","Camioneta"); comboTipo.setValue("Auto");
-        fVehId.setPrefWidth(140); fCajId.setPrefWidth(140);
+        Stage ven = new Stage();
+        ven.initModality(Modality.APPLICATION_MODAL);
+        ven.setTitle("Registrar entrada");
+        ven.setResizable(false);
 
-        Button btnEntrada=UI.btnPrimario("➕ Registrar Entrada");
-        Button btnSalida=new Button("✖ Registrar Salida");
-        btnSalida.setStyle("-fx-background-color:#ef4444;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:13px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:9 18;");
+        VBox cont = new VBox(14);
+        cont.setPadding(new Insets(24));
+        cont.setPrefWidth(520);
 
-        Label err=UI.errorLabel(); Label ok=UI.errorLabel();
-        ok.setStyle(UI.ALERT_SUCCESS);
+        Label titulo = new Label("Registrar entrada");
+        titulo.setFont(Font.font("System", FontWeight.BOLD, 15));
 
-        btnEntrada.setOnAction(e->{
-            UI.setError(err,null); UI.setError(ok,null);
-            try{
-                int vehId=Integer.parseInt(fVehId.getText().trim());
-                int cajId=Integer.parseInt(fCajId.getText().trim());
-                Session s=Session.getInstance();
-                Integer estId=s.getEstacionamientoActualId();
-                if(estId==null){ UI.setError(err,"Debe seleccionar un estacionamiento"); return; }
-                boolean res=ctrl.registrarEntrada(vehId,cajId,estId);
-                if(res){ ok.setText("✅ Entrada registrada correctamente."); ok.setVisible(true); ok.setManaged(true); cargar(); }
-                else UI.setError(err,"No se pudo registrar. ¿Cajón ya ocupado?");
-            }catch(NumberFormatException ex){ UI.setError(err,"Los IDs deben ser números."); }
-            catch(Exception ex){ UI.setError(err, ex.getMessage()); }
-        });
+        TextField fPlaca = UI.campo("ABC-123");
+        TextField fMarca = UI.campo("Marca (opcional)");
+        TextField fModelo = UI.campo("Modelo (opcional)");
+        TextField fColor = UI.campo("Color (opcional)");
+        TextField fAnio = UI.campo("Anio (opcional)");
+        ComboBox<String> comboTipo = UI.combo();
+        comboTipo.getItems().addAll("Auto", "Moto", "Camioneta");
+        comboTipo.setValue("Auto");
 
-        btnSalida.setOnAction(e->{
-            UI.setError(err,null); UI.setError(ok,null);
-            try{
-                int vehId=Integer.parseInt(fVehId.getText().trim());
-                Session s=Session.getInstance();
-                Integer estId=s.getEstacionamientoActualId();
-                if(estId==null){ UI.setError(err,"Debe seleccionar un estacionamiento"); return; }
-                RegistroEntradaSalida reg=ctrl.registrarSalida(vehId,comboTipo.getValue(),estId);
-                if(reg!=null){ ok.setText("✅ Salida registrada. Monto: $"+String.format("%.2f",reg.getMonto())); ok.setVisible(true); ok.setManaged(true); cargar(); }
-                else UI.setError(err,"No hay entrada activa para ese vehículo.");
-            }catch(NumberFormatException ex){ UI.setError(err,"El ID debe ser número."); }
-            catch(Exception ex){ UI.setError(err, ex.getMessage()); }
-        });
-
-        fila.getChildren().addAll(
-            UI.grupoCampo("ID Vehículo",fVehId),
-            UI.grupoCampo("ID Cajón",fCajId),
-            UI.grupoCampo("Tipo vehículo",comboTipo),
-            btnEntrada,
-            btnSalida
-        );
-        fila.setAlignment(Pos.CENTER_LEFT);
-
-        card.getChildren().addAll(titulo,fila,err,ok);
-        return card;
-    }
-
-    private void cargar(){
-        try{
-            Session s=Session.getInstance();
-            Integer estId = s.getEstacionamientoActualId();
-            if (estId == null) {
-                UI.mostrarError("Error", "Debe seleccionar un estacionamiento");
-                return;
+        ComboBox<Cajon> comboCajon = UI.combo();
+        cargarCajones(comboCajon, estId, true);
+        comboCajon.setConverter(new javafx.util.StringConverter<>() {
+            @Override public String toString(Cajon c) {
+                return c == null ? "" : "Cajon " + c.getNumero() + " - " + c.getTipo();
             }
+            @Override public Cajon fromString(String s) { return null; }
+        });
+
+        Runnable autollenar = () -> {
+            try {
+                String placa = fPlaca.getText() == null ? "" : fPlaca.getText().trim().toUpperCase();
+                if (placa.isBlank()) return;
+                Vehiculo existente = vehCtrl.obtenerVehiculoPorPatente(placa);
+                if (existente == null) return;
+                fPlaca.setText(existente.getPatente());
+                if (existente.getMarca() != null) fMarca.setText(existente.getMarca());
+                if (existente.getModelo() != null) fModelo.setText(existente.getModelo());
+                if (existente.getColor() != null) fColor.setText(existente.getColor());
+                if (existente.getTipo() != null) comboTipo.setValue(existente.getTipo());
+            } catch (Exception ignored) {
+                // El autollenado no debe bloquear el registro manual.
+            }
+        };
+        fPlaca.focusedProperty().addListener((o, old, focused) -> { if (!focused) autollenar.run(); });
+        fPlaca.setOnAction(e -> autollenar.run());
+
+        GridPane grid = new GridPane();
+        grid.setHgap(12);
+        grid.setVgap(12);
+        grid.add(UI.grupoCampo("Placa *", fPlaca), 0, 0);
+        grid.add(UI.grupoCampo("Tipo *", comboTipo), 1, 0);
+        grid.add(UI.grupoCampo("Cajon (opcional si tiene pension)", comboCajon), 0, 1, 2, 1);
+        grid.add(UI.grupoCampo("Color", fColor), 0, 2);
+        grid.add(UI.grupoCampo("Marca", fMarca), 1, 2);
+        grid.add(UI.grupoCampo("Modelo", fModelo), 0, 3);
+        grid.add(UI.grupoCampo("Anio", fAnio), 1, 3);
+        ColumnConstraints cc = new ColumnConstraints();
+        cc.setPercentWidth(50);
+        grid.getColumnConstraints().addAll(cc, new ColumnConstraints() {{ setPercentWidth(50); }});
+
+        Label err = UI.errorLabel();
+        Button cancelar = UI.btnSecundario("Cancelar");
+        Button guardar = UI.btnPrimario("Registrar entrada");
+        cancelar.setOnAction(e -> ven.close());
+        guardar.setOnAction(e -> {
+            UI.setError(err, null);
+                try {
+                Cajon cajon = comboCajon.getValue();
+                Vehiculo vehiculo = ctrl.registrarEntradaPorPlaca(
+                        fPlaca.getText(), comboTipo.getValue(), fMarca.getText(),
+                        fModelo.getText(), fColor.getText(), cajon != null ? cajon.getId() : 0, estId);
+                cargar();
+                ven.close();
+                String destino = cajon != null ? " en cajon " + cajon.getNumero() : " en su cajon de pension";
+                UI.mostrarInfo("Entrada registrada", "Vehiculo #" + vehiculo.getId() + destino);
+            } catch (Exception ex) {
+                UI.setError(err, ex.getMessage());
+            }
+        });
+
+        HBox bRow = new HBox(10, cancelar, guardar);
+        bRow.setAlignment(Pos.CENTER_RIGHT);
+        cont.getChildren().addAll(titulo, UI.separador(), grid, err, UI.separador(), bRow);
+        ven.setScene(new Scene(cont));
+        ven.showAndWait();
+    }
+
+    private void formularioSalida() {
+        Integer estId = estacionamientoActual();
+        if (estId == null) return;
+
+        Stage ven = new Stage();
+        ven.initModality(Modality.APPLICATION_MODAL);
+        ven.setTitle("Registrar salida");
+        ven.setResizable(false);
+
+        VBox cont = new VBox(14);
+        cont.setPadding(new Insets(24));
+        cont.setPrefWidth(480);
+
+        Label titulo = new Label("Registrar salida");
+        titulo.setFont(Font.font("System", FontWeight.BOLD, 15));
+
+        TextField fPlaca = UI.campo("Placa (opcional)");
+        ComboBox<Cajon> comboCajon = UI.combo();
+        cargarCajones(comboCajon, estId, false);
+        comboCajon.setConverter(new javafx.util.StringConverter<>() {
+            @Override public String toString(Cajon c) {
+                return c == null ? "" : "Cajon " + c.getNumero() + " - " + c.getEstado();
+            }
+            @Override public Cajon fromString(String s) { return null; }
+        });
+
+        ComboBox<ConvenioRestaurante> comboConvenio = UI.combo();
+        comboConvenio.getItems().add(null);
+        try {
+            comboConvenio.getItems().addAll(convenioCtrl.obtenerPorEstacionamiento(estId).stream()
+                    .filter(c -> c.getEstado() == null || "Vigente".equalsIgnoreCase(c.getEstado()))
+                    .toList());
+        } catch (Exception ignored) {
+            // Si no hay convenios configurados, se permite salida normal.
+        }
+        comboConvenio.setConverter(new javafx.util.StringConverter<>() {
+            @Override public String toString(ConvenioRestaurante c) {
+                return c == null ? "Sin convenio" : "Convenio #" + c.getId() + " - Restaurante #" + c.getRestauranteId();
+            }
+            @Override public ConvenioRestaurante fromString(String s) { return null; }
+        });
+        comboConvenio.setValue(null);
+
+        Label err = UI.errorLabel();
+        Button cancelar = UI.btnSecundario("Cancelar");
+        Button guardar = UI.btnPrimario("Registrar salida");
+        cancelar.setOnAction(e -> ven.close());
+        guardar.setOnAction(e -> {
+            UI.setError(err, null);
+            try {
+                String placa = fPlaca.getText() == null ? "" : fPlaca.getText().trim();
+                Cajon cajon = comboCajon.getValue();
+                if (placa.isBlank() && cajon == null) {
+                    UI.setError(err, "Ingrese una placa o seleccione un cajon ocupado.");
+                    return;
+                }
+
+                RegistroEntradaSalida reg = !placa.isBlank()
+                        ? ctrl.registrarSalidaPorPlaca(placa, estId)
+                        : ctrl.registrarSalidaPorCajon(cajon.getId(), estId);
+                if (reg == null) {
+                    UI.setError(err, !placa.isBlank()
+                            ? "No hay entrada activa para esa placa."
+                            : "No hay entrada activa para ese cajon.");
+                    return;
+                }
+
+                ConvenioRestaurante convenio = comboConvenio.getValue();
+                Pago pago;
+                if (convenio != null) {
+                    pago = cajaCtrl.registrarPagoConvenio(reg, Session.getInstance().getUsuario(), convenio.getRestauranteId(), convenio.getId());
+                } else {
+                    pago = cajaCtrl.registrarPago(reg, reg.getMonto(), Pago.MetodoPago.EFECTIVO, Session.getInstance().getUsuario());
+                }
+
+                cargar();
+                ven.close();
+                String ticket = pago != null ? "\nTicket: " + pago.getNumeroTicket() : "";
+                UI.mostrarInfo("Salida registrada", String.format("Monto a pagar: $%.2f%s", reg.getMonto(), ticket));
+            } catch (Exception ex) {
+                UI.setError(err, ex.getMessage());
+            }
+        });
+
+        VBox form = new VBox(12,
+                UI.grupoCampo("Placa", fPlaca),
+                UI.grupoCampo("Cajon ocupado", comboCajon),
+                UI.grupoCampo("Convenio", comboConvenio));
+        HBox bRow = new HBox(10, cancelar, guardar);
+        bRow.setAlignment(Pos.CENTER_RIGHT);
+        cont.getChildren().addAll(titulo, UI.separador(), form, err, UI.separador(), bRow);
+        ven.setScene(new Scene(cont));
+        ven.showAndWait();
+    }
+
+    private void cargarCajones(ComboBox<Cajon> combo, int estId, boolean disponibles) {
+        try {
+            List<Cajon> cajones = cajonCtrl.obtenerCajonesPorEstacionamiento(estId).stream()
+                    .filter(c -> disponibles ? esDisponible(c) : esOcupado(c))
+                    .toList();
+            combo.getItems().setAll(cajones);
+            if (!cajones.isEmpty()) combo.setValue(cajones.get(0));
+        } catch (Exception ex) {
+            combo.getItems().clear();
+        }
+    }
+
+    private boolean esDisponible(Cajon cajon) {
+        String estado = cajon.getEstado() == null ? "" : cajon.getEstado().trim().toLowerCase();
+        return estado.equals("libre") || estado.equals("disponible");
+    }
+
+    private boolean esOcupado(Cajon cajon) {
+        String estado = cajon.getEstado() == null ? "" : cajon.getEstado().trim().toLowerCase();
+        return estado.equals("ocupado");
+    }
+
+    private Integer estacionamientoActual() {
+        Integer estId = Session.getInstance().getEstacionamientoActualId();
+        if (estId == null) {
+            UI.mostrarError("Error", "Debe seleccionar un estacionamiento");
+        }
+        return estId;
+    }
+
+    private void cargar() {
+        try {
+            Integer estId = estacionamientoActual();
+            if (estId == null) return;
             datos.setAll(ctrl.obtenerRegistrosPorEstacionamiento(estId));
-        }catch(Exception e){ UI.mostrarError("Error",e.getMessage()); }
+        } catch (Exception e) {
+            UI.mostrarError("Error", e.getMessage());
+        }
     }
 }
 
-// ─────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 //  PENSIONES
 // ─────────────────────────────────────────────────────────────
 class PensionesImpl extends VBox {
 
     private final PensionController ctrl = new PensionController();
-    private final ClienteController cliCtrl = new ClienteController();
-    private final VehiculoController vehCtrl = new VehiculoController();
     private final CajonController cajonCtrl = new CajonController();
+    private final VehiculoController vehCtrl = new VehiculoController();
     private ObservableList<Pension> datos;
     private TableView<Pension> tabla;
 
     PensionesImpl() {
-        setPadding(new Insets(24,28,24,28)); setSpacing(16);
-        setStyle("-fx-background-color:"+UI.BG+";");
-        construir(); cargar();
+        setPadding(new Insets(24, 28, 24, 28));
+        setSpacing(16);
+        setStyle("-fx-background-color:" + UI.BG + ";");
+        construir();
+        cargar();
     }
 
     private void construir() {
-        Button btnNuevo=UI.btnPrimario("+ Nueva pensión");
-        btnNuevo.setOnAction(e->formulario(null));
+        Button btnNuevo = UI.btnPrimario("+ Nueva pension");
+        btnNuevo.setOnAction(e -> formulario(null));
 
-        tabla=new TableView<>(); UI.estilizarTabla(tabla);
-        datos=FXCollections.observableArrayList(); tabla.setItems(datos);
-        VBox.setVgrow(tabla,Priority.ALWAYS);
+        tabla = new TableView<>();
+        UI.estilizarTabla(tabla);
+        datos = FXCollections.observableArrayList();
+        tabla.setItems(datos);
+        VBox.setVgrow(tabla, Priority.ALWAYS);
 
-        TableColumn<Pension,Integer> colId=new TableColumn<>("ID"); colId.setCellValueFactory(new PropertyValueFactory<>("id")); colId.setPrefWidth(50);
-        TableColumn<Pension,Integer> colCli=new TableColumn<>("Cliente ID"); colCli.setCellValueFactory(new PropertyValueFactory<>("clienteId"));
-        TableColumn<Pension,Integer> colVeh=new TableColumn<>("Vehículo ID"); colVeh.setCellValueFactory(new PropertyValueFactory<>("vehiculoId"));
-        TableColumn<Pension,Integer> colCaj=new TableColumn<>("Cajón ID"); colCaj.setCellValueFactory(new PropertyValueFactory<>("cajonId"));
-        TableColumn<Pension,String> colEst=new TableColumn<>("Estado");
+        TableColumn<Pension, Integer> colId = new TableColumn<>("ID");
+        colId.setCellValueFactory(new PropertyValueFactory<>("id"));
+        colId.setPrefWidth(50);
+        TableColumn<Pension, Integer> colCli = new TableColumn<>("Cliente ID");
+        colCli.setCellValueFactory(new PropertyValueFactory<>("clienteId"));
+        TableColumn<Pension, Integer> colVeh = new TableColumn<>("Vehiculo ID");
+        colVeh.setCellValueFactory(new PropertyValueFactory<>("vehiculoId"));
+        TableColumn<Pension, Integer> colCaj = new TableColumn<>("Cajon ID");
+        colCaj.setCellValueFactory(new PropertyValueFactory<>("cajonId"));
+        TableColumn<Pension, String> colEst = new TableColumn<>("Estado");
         colEst.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(ctrl.calcularEstado(c.getValue())));
-        colEst.setCellFactory(col->new TableCell<>(){
-            @Override protected void updateItem(String v,boolean empty){
-                super.updateItem(v,empty); if(empty||v==null){setGraphic(null);return;}
-                setGraphic(UI.badge(v,"Activa".equals(v)?UI.badgeGreen():"Próxima a vencer".equals(v)?UI.badgeBlue():UI.badgeRed()));
+        colEst.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(String v, boolean empty) {
+                super.updateItem(v, empty);
+                if (empty || v == null) { setGraphic(null); return; }
+                setGraphic(UI.badge(v, "Activa".equals(v) ? UI.badgeGreen() : "Proxima a vencer".equals(v) ? UI.badgeBlue() : UI.badgeRed()));
             }
         });
-        TableColumn<Pension,String> colMonto=new TableColumn<>("Monto");
-        colMonto.setCellValueFactory(c->new javafx.beans.property.SimpleStringProperty(String.format("$%.2f",c.getValue().getMonto())));
-        TableColumn<Pension,Void> colAcc=new TableColumn<>("Acciones");
-        colAcc.setCellFactory(col->new TableCell<>(){
-            final Button e=UI.btnSecundario("✏️"); final Button d=UI.btnPeligro("🗑️");
-            { e.setStyle(e.getStyle()+UI.BTN_SMALL); d.setStyle(d.getStyle()+UI.BTN_SMALL);
-              e.setOnAction(ev->formulario(getTableView().getItems().get(getIndex())));
-              d.setOnAction(ev->{ Pension p=getTableView().getItems().get(getIndex());
-                  if(UI.confirmar("Cancelar pensión","¿Cancelar pensión #"+p.getId()+"?")){
-                      try{ctrl.cancelarPension(p.getId()); cargar();}catch(Exception ex){UI.mostrarError("Error",ex.getMessage());}
-                  }}); }
-            @Override protected void updateItem(Void v,boolean empty){
-                super.updateItem(v,empty); if(empty){setGraphic(null);return;}
-                Pension p=getTableView().getItems().get(getIndex());
-                String estado = ctrl.calcularEstado(p);
-                boolean vencida = "Vencida".equals(estado);
+        TableColumn<Pension, String> colMonto = new TableColumn<>("Monto");
+        colMonto.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(String.format("$%.2f", c.getValue().getMonto())));
+        TableColumn<Pension, Void> colAcc = new TableColumn<>("Acciones");
+        colAcc.setCellFactory(col -> new TableCell<>() {
+            final Button e = UI.btnSecundario("Editar");
+            final Button d = UI.btnPeligro("Cancelar");
+            {
+                e.setStyle(e.getStyle() + UI.BTN_SMALL);
+                d.setStyle(d.getStyle() + UI.BTN_SMALL);
+                e.setOnAction(ev -> formulario(getTableView().getItems().get(getIndex())));
+                d.setOnAction(ev -> {
+                    Pension p = getTableView().getItems().get(getIndex());
+                    if (UI.confirmar("Cancelar pension", "Cancelar pension #" + p.getId() + "?")) {
+                        try { ctrl.cancelarPension(p.getId()); cargar(); }
+                        catch (Exception ex) { UI.mostrarError("Error", ex.getMessage()); }
+                    }
+                });
+            }
+            @Override protected void updateItem(Void v, boolean empty) {
+                super.updateItem(v, empty);
+                if (empty) { setGraphic(null); return; }
+                Pension p = getTableView().getItems().get(getIndex());
+                boolean vencida = "Vencida".equals(ctrl.calcularEstado(p));
                 e.setDisable(vencida);
                 d.setDisable(vencida);
-                if (vencida) {
-                    e.setTooltip(new Tooltip("La pensión está vencida y no puede editarse"));
-                    d.setTooltip(new Tooltip("La pensión vencida no puede cancelarse"));
-                } else {
-                    e.setTooltip(null);
-                    d.setTooltip(null);
-                }
-                HBox h=new HBox(6,e,d);h.setAlignment(Pos.CENTER_LEFT);setGraphic(h);}
-        }); colAcc.setPrefWidth(160);
-
-        tabla.getColumns().addAll(colId,colCli,colVeh,colCaj,colEst,colMonto,colAcc);
-        tabla.setPlaceholder(UI.panelVacio("👥","No hay pensiones"));
-
-        getChildren().addAll(UI.encabezado("Pensiones","Contratos mensuales de clientes",btnNuevo),tabla);
-    }
-
-    private void cargar(){
-        try{
-            Session s = Session.getInstance();
-            Integer estId = s.getEstacionamientoActualId();
-            if (estId == null) {
-                datos.clear();
-                return;
+                HBox h = new HBox(6, e, d);
+                h.setAlignment(Pos.CENTER_LEFT);
+                setGraphic(h);
             }
-            datos.setAll(ctrl.obtenerPensionesActivas(estId));
-        }
-        catch(Exception e){ UI.mostrarError("Error",e.getMessage()); }
+        });
+        colAcc.setPrefWidth(170);
+
+        tabla.getColumns().addAll(colId, colCli, colVeh, colCaj, colEst, colMonto, colAcc);
+        tabla.setPlaceholder(UI.panelVacio("Pensiones", "No hay pensiones"));
+        getChildren().addAll(UI.encabezado("Pensiones", "Contratos mensuales con cajon asignado", btnNuevo), tabla);
     }
 
-    private void formulario(Pension editar){
-        Stage ven=new Stage(); ven.initModality(Modality.APPLICATION_MODAL);
-        ven.setTitle(editar==null?"Nueva pensión":"Editar pensión"); ven.setResizable(false);
-        VBox cont=new VBox(14); cont.setPadding(new Insets(24)); cont.setPrefWidth(460);
-        Label titulo=new Label(editar==null?"➕ Nueva pensión":"✏️ Editar pensión");
-        titulo.setFont(Font.font("System",FontWeight.BOLD,15));
+    private void cargar() {
+        try {
+            Integer estId = Session.getInstance().getEstacionamientoActualId();
+            if (estId == null) { datos.clear(); return; }
+            datos.setAll(ctrl.obtenerPensionesActivas(estId));
+        } catch (Exception e) {
+            UI.mostrarError("Error", e.getMessage());
+        }
+    }
 
-        TextField fCli=UI.campo("ID del cliente"); TextField fVeh=UI.campo("ID del vehículo");
-        TextField fCaj=UI.campo("ID del cajón"); TextField fMonto=UI.campo("Ej: 800.00");
-        javafx.scene.control.DatePicker dpInicio=new javafx.scene.control.DatePicker(java.time.LocalDate.now());
-        javafx.scene.control.DatePicker dpFin=new javafx.scene.control.DatePicker(java.time.LocalDate.now().plusMonths(1));
-        dpInicio.setMaxWidth(Double.MAX_VALUE); dpFin.setMaxWidth(Double.MAX_VALUE);
-        dpInicio.setStyle(UI.FIELD); dpFin.setStyle(UI.FIELD);
+    private void formulario(Pension editar) {
+        Stage ven = new Stage();
+        ven.initModality(Modality.APPLICATION_MODAL);
+        ven.setTitle(editar == null ? "Nueva pension" : "Editar pension");
+        ven.setResizable(false);
+
+        VBox cont = new VBox(14);
+        cont.setPadding(new Insets(24));
+        cont.setPrefWidth(560);
+        Label titulo = new Label(editar == null ? "Nueva pension" : "Editar pension");
+        titulo.setFont(Font.font("System", FontWeight.BOLD, 15));
+
+        TextField fPlaca = UI.campo("ABC-123");
+        TextField fMarca = UI.campo("Marca (opcional)");
+        TextField fModelo = UI.campo("Modelo (opcional)");
+        TextField fColor = UI.campo("Color (opcional)");
+        ComboBox<String> comboTipo = UI.combo();
+        comboTipo.getItems().addAll("Auto", "Moto", "Camioneta");
+        comboTipo.setValue("Auto");
+        TextField fMonto = UI.campo("Ej: 800.00");
+        ComboBox<Cajon> comboCajon = UI.combo();
+        cargarCajonesDisponibles(comboCajon, editar);
+        comboCajon.setConverter(new javafx.util.StringConverter<>() {
+            @Override public String toString(Cajon c) {
+                return c == null ? "" : "Cajon " + c.getNumero() + " - " + c.getTipo() + " (" + c.getEstado() + ")";
+            }
+            @Override public Cajon fromString(String s) { return null; }
+        });
+
+        DatePicker dpInicio = new DatePicker(LocalDate.now());
+        DatePicker dpFin = new DatePicker(LocalDate.now().plusMonths(1));
+        dpInicio.setMaxWidth(Double.MAX_VALUE);
+        dpFin.setMaxWidth(Double.MAX_VALUE);
+        dpInicio.setStyle(UI.FIELD);
+        dpFin.setStyle(UI.FIELD);
 
         boolean pensionVencida = false;
-        if(editar!=null){ fCli.setText(String.valueOf(editar.getClienteId())); fVeh.setText(String.valueOf(editar.getVehiculoId()));
-            fCaj.setText(String.valueOf(editar.getCajonId())); fMonto.setText(String.valueOf(editar.getMonto()));
-            if(editar.getFechaInicio()!=null) dpInicio.setValue(editar.getFechaInicio().toLocalDate());
-            if(editar.getFechaFin()!=null) dpFin.setValue(editar.getFechaFin().toLocalDate());
+        if (editar != null) {
+            try {
+                Vehiculo veh = vehCtrl.obtenerVehiculoPorId(editar.getVehiculoId());
+                if (veh != null) {
+                    fPlaca.setText(veh.getPatente());
+                    fMarca.setText(veh.getMarca() != null ? veh.getMarca() : "");
+                    fModelo.setText(veh.getModelo() != null ? veh.getModelo() : "");
+                    fColor.setText(veh.getColor() != null ? veh.getColor() : "");
+                    if (veh.getTipo() != null && !veh.getTipo().isBlank()) comboTipo.setValue(veh.getTipo());
+                }
+            } catch (Exception ignored) {
+                fPlaca.setText("Vehiculo #" + editar.getVehiculoId());
+            }
+            fMonto.setText(String.valueOf(editar.getMonto()));
+            seleccionarCajon(comboCajon, editar.getCajonId());
+            if (editar.getFechaInicio() != null) dpInicio.setValue(editar.getFechaInicio().toLocalDate());
+            if (editar.getFechaFin() != null) dpFin.setValue(editar.getFechaFin().toLocalDate());
             pensionVencida = ctrl.esPensionVencida(editar);
         }
+        fPlaca.setDisable(editar != null);
 
-        GridPane grid=new GridPane(); grid.setHgap(12); grid.setVgap(12);
-        grid.add(UI.grupoCampo("ID Cliente *",fCli),0,0);
-        grid.add(UI.grupoCampo("ID Vehículo *",fVeh),1,0);
-        grid.add(UI.grupoCampo("ID Cajón *",fCaj),0,1);
-        grid.add(UI.grupoCampo("Monto mensual *",fMonto),1,1);
-        grid.add(UI.grupoCampo("Fecha inicio",dpInicio),0,2);
-        grid.add(UI.grupoCampo("Fecha fin",dpFin),1,2);
-        ColumnConstraints cc=new ColumnConstraints(); cc.setPercentWidth(50);
-        grid.getColumnConstraints().addAll(cc,new ColumnConstraints(){{setPercentWidth(50);}});
+        Runnable autollenar = () -> {
+            try {
+                String placa = fPlaca.getText() == null ? "" : fPlaca.getText().trim().toUpperCase();
+                if (placa.isBlank()) return;
+                Vehiculo existente = vehCtrl.obtenerVehiculoPorPatente(placa);
+                if (existente == null) return;
+                fPlaca.setText(existente.getPatente());
+                if (existente.getMarca() != null) fMarca.setText(existente.getMarca());
+                if (existente.getModelo() != null) fModelo.setText(existente.getModelo());
+                if (existente.getColor() != null) fColor.setText(existente.getColor());
+                if (existente.getTipo() != null && !existente.getTipo().isBlank()) comboTipo.setValue(existente.getTipo());
+            } catch (Exception ignored) {
+                // El autollenado no debe bloquear una placa nueva.
+            }
+        };
+        fPlaca.focusedProperty().addListener((o, old, focused) -> { if (!focused) autollenar.run(); });
+        fPlaca.setOnAction(e -> autollenar.run());
 
-        Label err=UI.errorLabel();
-        Label avisoVencida=new Label();
+        GridPane grid = new GridPane();
+        grid.setHgap(12);
+        grid.setVgap(12);
+        grid.add(UI.grupoCampo("Placa *", fPlaca), 0, 0);
+        grid.add(UI.grupoCampo("Tipo *", comboTipo), 1, 0);
+        grid.add(UI.grupoCampo("Cajon asignado *", comboCajon), 0, 1);
+        grid.add(UI.grupoCampo("Monto a cobrar *", fMonto), 1, 1);
+        grid.add(UI.grupoCampo("Color", fColor), 0, 2);
+        grid.add(UI.grupoCampo("Marca", fMarca), 1, 2);
+        grid.add(UI.grupoCampo("Modelo", fModelo), 0, 3);
+        grid.add(UI.grupoCampo("Fecha inicio", dpInicio), 0, 4);
+        grid.add(UI.grupoCampo("Fecha fin", dpFin), 1, 4);
+        ColumnConstraints cc = new ColumnConstraints();
+        cc.setPercentWidth(50);
+        grid.getColumnConstraints().addAll(cc, new ColumnConstraints() {{ setPercentWidth(50); }});
+
+        Label err = UI.errorLabel();
+        Label avisoCobro = UI.alertaInfo(editar == null
+                ? "Al crear la pension se registrara automaticamente el cobro en caja."
+                : "La edicion no genera un nuevo cobro.");
+        Label avisoVencida = new Label();
         avisoVencida.setStyle("-fx-text-fill:#92400e;-fx-font-weight:bold;");
         if (pensionVencida) {
-            avisoVencida.setText("Esta pensión ya está vencida y no puede editarse. Cree una nueva pensión para renovarla.");
+            avisoVencida.setText("Esta pension esta vencida y no puede editarse. Cree una nueva para renovarla.");
         }
-        Button guardar=UI.btnPrimario(editar==null?"Guardar":"Actualizar");
-        Button cancelar=UI.btnSecundario("Cancelar"); cancelar.setOnAction(e->ven.close());
 
-        guardar.setOnAction(e->{
-            try{
-                int cliId=Integer.parseInt(fCli.getText().trim());
-                int vehId=Integer.parseInt(fVeh.getText().trim());
-                int cajId=Integer.parseInt(fCaj.getText().trim());
-                double monto=Double.parseDouble(fMonto.getText().trim());
-                Session s=Session.getInstance();
-                Integer estId = s.getEstacionamientoActualId();
-                if (estId == null) {
-                    UI.setError(err, "Debe seleccionar un estacionamiento");
+        Button guardar = UI.btnPrimario(editar == null ? "Guardar" : "Actualizar");
+        Button cancelar = UI.btnSecundario("Cancelar");
+        cancelar.setOnAction(e -> ven.close());
+        guardar.setOnAction(e -> {
+            try {
+                Cajon cajon = comboCajon.getValue();
+                if (cajon == null) { UI.setError(err, "Seleccione un cajon disponible."); return; }
+                double monto = Double.parseDouble(fMonto.getText().trim());
+                Integer estId = Session.getInstance().getEstacionamientoActualId();
+                if (estId == null) { UI.setError(err, "Debe seleccionar un estacionamiento"); return; }
+
+                if (editar == null) {
+                    Pago pago = ctrl.crearPensionPorPlacaConCobro(
+                            fPlaca.getText(), comboTipo.getValue(), fMarca.getText(),
+                            fModelo.getText(), fColor.getText(), cajon.getId(), estId,
+                            dpInicio.getValue().atStartOfDay(), dpFin.getValue().atTime(23, 59),
+                            monto, Session.getInstance().getUsuario());
+                    cargar();
+                    ven.close();
+                    UI.mostrarInfo("Pension registrada",
+                            "Pension creada y cobro registrado: " + (pago != null ? pago.getNumeroTicket() : "sin ticket"));
                     return;
                 }
 
-                Pension p=editar!=null?editar:new Pension(cliId,vehId,cajId,
-                    dpInicio.getValue().atStartOfDay(), dpFin.getValue().atTime(23,59), monto, estId);
-                if(editar!=null){ p.setClienteId(cliId); p.setVehiculoId(vehId); p.setCajonId(cajId);
-                    p.setMonto(monto); p.setFechaInicio(dpInicio.getValue().atStartOfDay());
-                    p.setFechaFin(dpFin.getValue().atTime(23,59)); }
+                editar.setCajonId(cajon.getId());
+                editar.setMonto(monto);
+                editar.setFechaInicio(dpInicio.getValue().atStartOfDay());
+                editar.setFechaFin(dpFin.getValue().atTime(23, 59));
+                editar.setEstacionamientoId(estId);
+                if (editar.getEstado() == null) editar.setEstado("Activa");
 
-                boolean ok=editar==null?ctrl.crearPension(p):ctrl.actualizarPension(p);
-                if(ok){cargar();ven.close();}else UI.setError(err,"Error al guardar.");
-            }catch(NumberFormatException ex){ UI.setError(err,"Los IDs y monto deben ser numéricos."); }
-            catch(Exception ex){ UI.setError(err,ex.getMessage()); }
+                boolean ok = ctrl.actualizarPension(editar);
+                if (ok) { cargar(); ven.close(); }
+                else UI.setError(err, "Error al guardar.");
+            } catch (NumberFormatException ex) {
+                UI.setError(err, "El monto debe ser numerico.");
+            } catch (Exception ex) {
+                UI.setError(err, ex.getMessage());
+            }
         });
 
-        HBox bRow=new HBox(10,cancelar,guardar); bRow.setAlignment(Pos.CENTER_RIGHT);
-        cont.getChildren().addAll(titulo,UI.separador(),grid,err,avisoVencida,UI.separador(),bRow);
-        if (pensionVencida) {
-            guardar.setDisable(true);
+        HBox bRow = new HBox(10, cancelar, guardar);
+        bRow.setAlignment(Pos.CENTER_RIGHT);
+        cont.getChildren().addAll(titulo, UI.separador(), grid, avisoCobro, err, avisoVencida, UI.separador(), bRow);
+        if (pensionVencida) guardar.setDisable(true);
+        ven.setScene(new Scene(cont));
+        ven.showAndWait();
+    }
+
+    private void cargarCajonesDisponibles(ComboBox<Cajon> combo, Pension editar) {
+        try {
+            Integer estId = Session.getInstance().getEstacionamientoActualId();
+            if (estId == null) return;
+            List<Cajon> cajones = cajonCtrl.obtenerCajonesPorEstacionamiento(estId).stream()
+                    .filter(c -> esDisponible(c) || (editar != null && c.getId() == editar.getCajonId()))
+                    .toList();
+            combo.getItems().setAll(cajones);
+            if (!cajones.isEmpty()) combo.setValue(cajones.get(0));
+        } catch (Exception ignored) {
+            combo.getItems().clear();
         }
-        ven.setScene(new Scene(cont)); ven.showAndWait();
+    }
+
+    private void seleccionarCajon(ComboBox<Cajon> combo, int cajonId) {
+        combo.getItems().stream()
+                .filter(c -> c.getId() == cajonId)
+                .findFirst()
+                .ifPresent(combo::setValue);
+    }
+
+    private boolean esDisponible(Cajon cajon) {
+        String estado = cajon.getEstado() == null ? "" : cajon.getEstado().trim().toLowerCase();
+        return estado.equals("libre") || estado.equals("disponible");
     }
 }
 
-// ─────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 //  PRECIOS
 // ─────────────────────────────────────────────────────────────
 class PreciosImpl extends VBox {
@@ -1322,6 +1543,7 @@ class PromocionesImpl extends VBox {
 class NotificacionesImpl extends VBox {
 
     private final NotificacionController ctrl = new NotificacionController();
+    private final EstacionamientoController estCtrl = new EstacionamientoController();
     private VBox listaContainer;
     private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -1382,31 +1604,61 @@ class NotificacionesImpl extends VBox {
         item.getChildren().addAll(icoLbl,info,acc);
         return item;
     }
-
     private void formulario(){
-        Stage ven=new Stage(); ven.initModality(Modality.APPLICATION_MODAL); ven.setTitle("Nueva notificación"); ven.setResizable(false);
-        VBox cont=new VBox(14); cont.setPadding(new Insets(24)); cont.setPrefWidth(420);
-        Label titulo=new Label("🔔 Nueva notificación"); titulo.setFont(Font.font("System",FontWeight.BOLD,15));
-        TextField fTitulo=UI.campo("Título"); TextArea fMsg=UI.areaTexto("Mensaje...",4);
+        Stage ven=new Stage(); ven.initModality(Modality.APPLICATION_MODAL); ven.setTitle("Nuevo mensaje"); ven.setResizable(false);
+        VBox cont=new VBox(14); cont.setPadding(new Insets(24)); cont.setPrefWidth(480);
+        Label titulo=new Label("Nuevo mensaje"); titulo.setFont(Font.font("System",FontWeight.BOLD,15));
+        TextField fTitulo=UI.campo("Titulo"); TextArea fMsg=UI.areaTexto("Mensaje...",4);
         ComboBox<String> comboTipo=UI.combo(); comboTipo.getItems().addAll("Info","Advertencia","Error","Recordatorio"); comboTipo.setValue("Info");
 
+        Session sesion = Session.getInstance();
+        boolean esAdmin = sesion.isAdmin();
+        ComboBox<Estacionamiento> comboDestino = UI.combo();
+        if (esAdmin) {
+            try { comboDestino.getItems().addAll(estCtrl.obtenerTodosLosEstacionamientos()); } catch (Exception ignored) {}
+            comboDestino.setConverter(new javafx.util.StringConverter<>() {
+                @Override public String toString(Estacionamiento e) { return e != null ? e.getNombre() : ""; }
+                @Override public Estacionamiento fromString(String s) { return null; }
+            });
+            if (!comboDestino.getItems().isEmpty()) comboDestino.setValue(comboDestino.getItems().get(0));
+        }
+
+        Label destinoInfo = UI.alertaInfo(esAdmin
+                ? "El mensaje se enviara a los usuarios activos del estacionamiento seleccionado."
+                : "El mensaje se enviara a los administradores.");
+
         Label err=UI.errorLabel();
-        Button guardar=UI.btnPrimario("Publicar"); Button cancelar=UI.btnSecundario("Cancelar"); cancelar.setOnAction(e->ven.close());
+        Button guardar=UI.btnPrimario("Enviar"); Button cancelar=UI.btnSecundario("Cancelar"); cancelar.setOnAction(e->ven.close());
         guardar.setOnAction(e->{
-            Session s=Session.getInstance(); if(s.getUsuario()==null){UI.setError(err,"Sesión no encontrada.");return;}
-            if(fTitulo.getText().isBlank()){UI.setError(err,"El título es obligatorio.");return;}
+            if(sesion.getUsuario()==null){UI.setError(err,"Sesion no encontrada.");return;}
+            if(fTitulo.getText().isBlank()){UI.setError(err,"El titulo es obligatorio.");return;}
             if(fMsg.getText().isBlank()){UI.setError(err,"El mensaje es obligatorio.");return;}
-            try{ Notificacion n=new Notificacion(s.getUsuario().getId(),fTitulo.getText().trim(),fMsg.getText().trim(),comboTipo.getValue());
-                boolean ok=ctrl.crearNotificacion(n); if(ok){cargar();ven.close();}else UI.setError(err,"Error al guardar.");
+            try{
+                String tituloMsg = fTitulo.getText().trim();
+                String mensaje = fMsg.getText().trim();
+                int enviados;
+                if (esAdmin) {
+                    Estacionamiento destino = comboDestino.getValue();
+                    if (destino == null) { UI.setError(err, "Seleccione un estacionamiento destino."); return; }
+                    enviados = ctrl.enviarAEstacionamiento(destino.getId(), tituloMsg, mensaje, comboTipo.getValue());
+                } else {
+                    String nombreEst = sesion.getEstacionamientoActualNombre() != null
+                            ? sesion.getEstacionamientoActualNombre()
+                            : "Estacionamiento";
+                    enviados = ctrl.enviarAAdministradores("[" + nombreEst + "] " + tituloMsg, mensaje, comboTipo.getValue());
+                }
+                cargar(); ven.close(); UI.mostrarInfo("Mensaje enviado", "Destinatarios: " + enviados);
             }catch(Exception ex){UI.setError(err,ex.getMessage());}
         });
         HBox bRow=new HBox(10,cancelar,guardar); bRow.setAlignment(Pos.CENTER_RIGHT);
-        cont.getChildren().addAll(titulo,UI.separador(),UI.grupoCampo("Tipo",comboTipo),UI.grupoCampo("Título *",fTitulo),UI.grupoCampo("Mensaje *",fMsg),err,UI.separador(),bRow);
+        cont.getChildren().addAll(titulo,UI.separador(),destinoInfo);
+        if (esAdmin) cont.getChildren().add(UI.grupoCampo("Estacionamiento destino", comboDestino));
+        cont.getChildren().addAll(UI.grupoCampo("Tipo",comboTipo),UI.grupoCampo("Titulo *",fTitulo),UI.grupoCampo("Mensaje *",fMsg),err,UI.separador(),bRow);
         ven.setScene(new Scene(cont)); ven.showAndWait();
     }
 }
 
-// ─────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 //  REPORTES
 // ─────────────────────────────────────────────────────────────
 class ReportesImpl extends ScrollPane {
@@ -1417,6 +1669,10 @@ class ReportesImpl extends ScrollPane {
     private final PromocionController promoCtrl = new PromocionController();
     private final GeneradorPDF generadorPDF;
     private final GeneradorExcel generadorExcel;
+    private RadioButton rbReporteGeneral;
+    private RadioButton rbReporteEstacionamiento;
+    private ComboBox<Estacionamiento> comboReporteEstacionamiento;
+    private List<CheckBox> checksTablasReporte;
 
     ReportesImpl() {
         System.out.println("[DEBUG] ReportesImpl constructor");
@@ -1445,109 +1701,119 @@ generadorExcel = new GeneradorExcel(
         );
         setContent(contenido);
     }
-
   private VBox crearPanelGeneradores(){
 
     VBox card = new VBox(12);
     card.setStyle(UI.CARD);
     card.setPadding(new Insets(20));
 
-    Label titulo = new Label("📂 Exportar Base de Datos");
+    Label titulo = new Label("Exportar reportes");
     titulo.setFont(Font.font("System", FontWeight.BOLD, 13));
 
-    Label desc = new Label("Descarga la base de datos en PDF o Excel");
+    Label desc = new Label("Seleccione alcance, tablas y formato de salida");
     desc.setStyle("-fx-text-fill:"+UI.MUTED+";-fx-font-size:11px;");
+
+    ToggleGroup alcance = new ToggleGroup();
+    rbReporteGeneral = new RadioButton("Reporte general");
+    rbReporteEstacionamiento = new RadioButton("Por estacionamiento");
+    rbReporteGeneral.setToggleGroup(alcance);
+    rbReporteEstacionamiento.setToggleGroup(alcance);
+    rbReporteEstacionamiento.setSelected(true);
+
+    comboReporteEstacionamiento = UI.combo();
+    try {
+        comboReporteEstacionamiento.getItems().addAll(estCtrl.obtenerTodosLosEstacionamientos());
+        Integer actual = Session.getInstance().getEstacionamientoActualId();
+        Estacionamiento seleccionado = comboReporteEstacionamiento.getItems().stream()
+                .filter(e -> actual != null && e.getId() == actual)
+                .findFirst()
+                .orElse(comboReporteEstacionamiento.getItems().isEmpty() ? null : comboReporteEstacionamiento.getItems().get(0));
+        comboReporteEstacionamiento.setValue(seleccionado);
+    } catch (Exception ignored) {
+    }
+    comboReporteEstacionamiento.setConverter(new javafx.util.StringConverter<>() {
+        @Override public String toString(Estacionamiento e) { return e != null ? e.getNombre() : ""; }
+        @Override public Estacionamiento fromString(String s) { return null; }
+    });
+    comboReporteEstacionamiento.disableProperty().bind(rbReporteGeneral.selectedProperty());
+
+    HBox filtrosReporte = new HBox(12,
+            rbReporteGeneral,
+            rbReporteEstacionamiento,
+            UI.grupoCampo("Estacionamiento", comboReporteEstacionamiento));
+    filtrosReporte.setAlignment(Pos.CENTER_LEFT);
+
+    checksTablasReporte = List.of(
+            new CheckBox("estacionamientos"),
+            new CheckBox("cajones"),
+            new CheckBox("registros_entrada_salida"),
+            new CheckBox("vehiculos"),
+            new CheckBox("pensiones"),
+            new CheckBox("pagos"),
+            new CheckBox("promociones")
+    );
+    checksTablasReporte.forEach(c -> c.setSelected(true));
+    FlowPane tablas = new FlowPane(12, 8);
+    tablas.getChildren().addAll(checksTablasReporte);
 
     FlowPane botones = new FlowPane(12, 12);
     botones.setAlignment(Pos.CENTER_LEFT);
     botones.setPrefWrapLength(900);
-    botones.setPadding(new Insets(0, 0, 0, 0));
 
-    Button btnPdfOcupacion = new Button("PDF Ocupacion");
-    btnPdfOcupacion.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    Button btnPdfOcupacion = botonReporte("PDF Ocupacion", "#dc2626");
     btnPdfOcupacion.setOnAction(e -> generarReportePdfOcupacion());
-
-    Button btnPdfIngresos = new Button("PDF Ingresos");
-    btnPdfIngresos.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    Button btnPdfIngresos = botonReporte("PDF Ingresos", "#dc2626");
     btnPdfIngresos.setOnAction(e -> generarReportePdfIngresos());
-
-    Button btnPdfPensiones = new Button("PDF Pensiones");
-    btnPdfPensiones.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    Button btnPdfPensiones = botonReporte("PDF Pensiones", "#dc2626");
     btnPdfPensiones.setOnAction(e -> generarReportePdfPensiones());
-
-    Button btnExcelOcupacion = new Button("Excel Ocupacion");
-    btnExcelOcupacion.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    Button btnExcelOcupacion = botonReporte("Excel Ocupacion", "#16a34a");
     btnExcelOcupacion.setOnAction(e -> generarReporteExcelOcupacion());
-
-    Button btnExcelIngresos = new Button("Excel Ingresos");
-    btnExcelIngresos.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    Button btnExcelIngresos = botonReporte("Excel Ingresos", "#16a34a");
     btnExcelIngresos.setOnAction(e -> generarReporteExcelIngresos());
-
-    Button btnExcelPensiones = new Button("Excel Pensiones");
-    btnExcelPensiones.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    Button btnExcelPensiones = botonReporte("Excel Pensiones", "#16a34a");
     btnExcelPensiones.setOnAction(e -> generarReporteExcelPensiones());
-
-    // =========================
-    // PDF
-    // =========================
-
-    Button btnPdfDia = new Button("📄 PDF Día");
-    btnPdfDia.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    Button btnPdfDia = botonReporte("PDF Dia", "#dc2626");
     btnPdfDia.setOnAction(e -> generarPdfDia());
-
-    Button btnPdfMes = new Button("📄 PDF Mes");
-    btnPdfMes.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    Button btnPdfMes = botonReporte("PDF Mes", "#dc2626");
     btnPdfMes.setOnAction(e -> generarPdfMes());
-
-    Button btnPdfAnio = new Button("📄 PDF Año");
-    btnPdfAnio.setStyle("-fx-background-color:#dc2626;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    Button btnPdfAnio = botonReporte("PDF Anio", "#dc2626");
     btnPdfAnio.setOnAction(e -> generarPdfAnio());
-
-    // =========================
-    // EXCEL
-    // =========================
-
-    Button btnExcelDia = new Button("📊 Excel Día");
-    btnExcelDia.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    Button btnExcelDia = botonReporte("Excel Dia", "#16a34a");
     btnExcelDia.setOnAction(e -> generarExcelDia());
-
-    Button btnExcelMes = new Button("📊 Excel Mes");
-    btnExcelMes.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    Button btnExcelMes = botonReporte("Excel Mes", "#16a34a");
     btnExcelMes.setOnAction(e -> generarExcelMes());
-
-    Button btnExcelAnio = new Button("📊 Excel Año");
-    btnExcelAnio.setStyle("-fx-background-color:#16a34a;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    Button btnExcelAnio = botonReporte("Excel Anio", "#16a34a");
     btnExcelAnio.setOnAction(e -> generarExcelAnio());
-
-    Button btnExcelCompleto = new Button("💾 Excel Completo");
-    btnExcelCompleto.setStyle("-fx-background-color:#2563eb;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    Button btnExcelCompleto = botonReporte("Excel Completo", "#2563eb");
     btnExcelCompleto.setOnAction(e -> generarExcelCompleto());
+    Button btnExcelSeleccion = botonReporte("Excel Seleccion", "#0f766e");
+    btnExcelSeleccion.setOnAction(e -> generarExcelSeleccionado());
 
     botones.getChildren().addAll(
-            btnPdfOcupacion,
-            btnPdfIngresos,
-            btnPdfPensiones,
-            btnExcelOcupacion,
-            btnExcelIngresos,
-            btnExcelPensiones,
-            btnPdfDia,
-            btnPdfMes,
-            btnPdfAnio,
-            btnExcelDia,
-            btnExcelMes,
-            btnExcelAnio,
-            btnExcelCompleto
+            btnPdfOcupacion, btnPdfIngresos, btnPdfPensiones,
+            btnExcelOcupacion, btnExcelIngresos, btnExcelPensiones,
+            btnPdfDia, btnPdfMes, btnPdfAnio,
+            btnExcelDia, btnExcelMes, btnExcelAnio,
+            btnExcelCompleto, btnExcelSeleccion
     );
 
     card.getChildren().addAll(
             new VBox(3, titulo, desc),
+            filtrosReporte,
+            UI.grupoCampo("Tablas para exportacion seleccionada", tablas),
             botones
     );
 
     return card;
 }
 
-  private String seleccionarCarpetaGuardado(String tipo){
+private Button botonReporte(String texto, String color) {
+    Button b = new Button(texto);
+    b.setStyle("-fx-background-color:"+color+";-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:8;-fx-cursor:hand;-fx-padding:10 16;");
+    return b;
+}
+
+private String seleccionarCarpetaGuardado(String tipo){
 
     DirectoryChooser chooser =
             new DirectoryChooser();
@@ -1665,6 +1931,18 @@ private void generarPdfMes(){
 
 
 private Integer estacionamientoReporteActual(){
+    if (rbReporteGeneral != null && rbReporteGeneral.isSelected()) {
+        UI.mostrarError(
+                "Reportes",
+                "Este reporte requiere seleccionar un estacionamiento. Use los reportes generales o cambie el alcance."
+        );
+        return null;
+    }
+
+    if (comboReporteEstacionamiento != null && comboReporteEstacionamiento.getValue() != null) {
+        return comboReporteEstacionamiento.getValue().getId();
+    }
+
     Session s =
             Session.getInstance();
 
@@ -2059,6 +2337,60 @@ private void generarExcelCompleto(){
     }
 }
 
+private void generarExcelSeleccionado(){
+
+    String ruta =
+            seleccionarCarpetaGuardado(
+                    "Excel Seleccion"
+            );
+
+    if(ruta == null) return;
+
+    try{
+        List<String> tablas = checksTablasReporte.stream()
+                .filter(CheckBox::isSelected)
+                .map(CheckBox::getText)
+                .toList();
+
+        if (tablas.isEmpty()) {
+            UI.mostrarError("Reportes", "Seleccione al menos una tabla.");
+            return;
+        }
+
+        Integer estId = null;
+        if (rbReporteEstacionamiento != null && rbReporteEstacionamiento.isSelected()) {
+            if (comboReporteEstacionamiento == null || comboReporteEstacionamiento.getValue() == null) {
+                UI.mostrarError("Reportes", "Seleccione un estacionamiento.");
+                return;
+            }
+            estId = comboReporteEstacionamiento.getValue().getId();
+        }
+
+        GeneradorExcel gen =
+                new GeneradorExcel(
+                        ruta,
+                        ConexionDB.getInstancia().getConexion()
+                );
+
+        boolean ok =
+                gen.generarTablasSeleccionadasExcel(tablas, estId);
+
+        UI.mostrarInfo(
+                "Excel",
+                ok
+                ? "Exportacion seleccionada generada"
+                : "Error al exportar seleccion"
+        );
+
+    }catch(Exception e){
+
+        UI.mostrarError(
+                "Error",
+                e.getMessage()
+        );
+    }
+}
+
 
 
 
@@ -2189,3 +2521,8 @@ class ConfiguracionImpl extends ScrollPane {
         card.getChildren().addAll(titulo,grid); return card;
     }
 }
+
+
+
+
+

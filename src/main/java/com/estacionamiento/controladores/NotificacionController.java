@@ -1,7 +1,9 @@
 package com.estacionamiento.controladores;
 
 import com.estacionamiento.dao.NotificacionDAO;
+import com.estacionamiento.dao.UsuarioDAO;
 import com.estacionamiento.modelos.Notificacion;
+import com.estacionamiento.modelos.Usuario;
 import java.util.List;
 
 /**
@@ -9,9 +11,11 @@ import java.util.List;
  */
 public class NotificacionController {
     private NotificacionDAO notificacionDAO;
+    private UsuarioDAO usuarioDAO;
 
     public NotificacionController() {
         this.notificacionDAO = new NotificacionDAO();
+        this.usuarioDAO = new UsuarioDAO();
     }
 
     public boolean crearNotificacion(Notificacion notificacion) throws Exception {
@@ -62,6 +66,27 @@ public class NotificacionController {
     public boolean enviarNotificacion(int usuarioId, String titulo, String mensaje, String tipo) throws Exception {
         Notificacion notificacion = new Notificacion(usuarioId, titulo, mensaje, tipo);
         return crearNotificacion(notificacion);
+    }
+
+    public int enviarAEstacionamiento(int estacionamientoId, String titulo, String mensaje, String tipo) throws Exception {
+        int enviados = 0;
+        for (Usuario usuario : usuarioDAO.obtenerPorEstacionamiento(estacionamientoId)) {
+            if (usuario.isActivo() && enviarNotificacion(usuario.getId(), titulo, mensaje, tipo)) {
+                enviados++;
+            }
+        }
+        return enviados;
+    }
+
+    public int enviarAAdministradores(String titulo, String mensaje, String tipo) throws Exception {
+        int enviados = 0;
+        for (Usuario usuario : usuarioDAO.obtenerTodos()) {
+            if (usuario.isActivo() && usuario.getRol() == 1 &&
+                    enviarNotificacion(usuario.getId(), titulo, mensaje, tipo)) {
+                enviados++;
+            }
+        }
+        return enviados;
     }
 
     // Validaciones

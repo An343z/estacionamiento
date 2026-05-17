@@ -65,9 +65,7 @@ public class CajaModule extends VBox {
         tabs.setStyle("-fx-background-color:white;-fx-background-radius:12;");
         VBox.setVgrow(tabs, Priority.ALWAYS);
 
-        tabs.getTabs().add(crearTabCobrar());
         tabs.getTabs().add(crearTabHistorial());
-        tabs.getTabs().add(crearTabMetodosPago());
 
         // Corte de caja: solo Encargado y Admin
         if (s.getUsuario() != null && s.getUsuario().getRol() != 3) {

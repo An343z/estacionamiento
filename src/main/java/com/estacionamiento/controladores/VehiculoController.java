@@ -33,6 +33,10 @@ public class VehiculoController {
         return vehiculoDAO.obtenerTodos();
     }
 
+    public List<Vehiculo> obtenerVehiculosConHistorial() throws Exception {
+        return vehiculoDAO.obtenerConHistorial();
+    }
+
     public List<Vehiculo> obtenerVehiculosPorCliente(int clienteId) throws Exception {
         return vehiculoDAO.obtenerPorCliente(clienteId);
     }

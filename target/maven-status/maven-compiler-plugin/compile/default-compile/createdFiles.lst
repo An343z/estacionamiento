@@ -19,7 +19,6 @@ com\estacionamiento\utilidades\EmailSender.class
 com\estacionamiento\ui\main\Sidebar.class
 com\estacionamiento\MainTest.class
 com\estacionamiento\ui\modules\NotificacionesImpl.class
-com\estacionamiento\ui\modules\VehiculosImpl$1.class
 com\estacionamiento\api\ApiClient.class
 com\estacionamiento\ui\modules\ClientesModule.class
 com\estacionamiento\ui\modules\CorreoRecordatorioView.class
@@ -153,7 +152,6 @@ com\estacionamiento\api\SimpleJson.class
 com\estacionamiento\controladores\VehiculoController.class
 com\estacionamiento\api\ApiSqlClient.class
 com\estacionamiento\ui\modules\UsuariosImpl$3.class
-com\estacionamiento\ui\modules\VehiculosImpl$2.class
 com\estacionamiento\modelos\Notificacion.class
 com\estacionamiento\api\SimpleJson$Parser.class
 com\estacionamiento\utilidades\Validaciones.class

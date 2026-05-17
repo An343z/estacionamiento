@@ -97,9 +97,6 @@ public class ClienteController {
         if (vehiculo.getPatente() == null || vehiculo.getPatente().trim().isEmpty()) {
             return "La patente es requerida";
         }
-        if (vehiculo.getMarca() == null || vehiculo.getMarca().trim().isEmpty()) {
-            return "La marca es requerida";
-        }
         if (vehiculo.getTipo() == null || vehiculo.getTipo().trim().isEmpty()) {
             return "El tipo de vehículo es requerido";
         }

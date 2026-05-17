@@ -25,7 +25,7 @@ public class PensionDAO {
         String sql = "INSERT INTO pensiones (cliente_id, vehiculo_id, cajon_id, fecha_inicio, fecha_fin, monto, estado, estacionamiento_id) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         
-        try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
+        try (PreparedStatement pstmt = conexion.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             pstmt.setInt(1, pension.getClienteId());
             pstmt.setInt(2, pension.getVehiculoId());
             pstmt.setInt(3, pension.getCajonId());
@@ -35,7 +35,14 @@ public class PensionDAO {
             pstmt.setString(7, pension.getEstado());
             pstmt.setInt(8, pension.getEstacionamientoId());
             
-            pstmt.executeUpdate();
+            int filas = pstmt.executeUpdate();
+            if (filas > 0) {
+                try (ResultSet keys = pstmt.getGeneratedKeys()) {
+                    if (keys.next()) {
+                        pension.setId(keys.getInt(1));
+                    }
+                }
+            }
             return true;
         } catch (SQLException e) {
             System.err.println("Error al crear pensión: " + e.getMessage());
@@ -110,13 +117,18 @@ public class PensionDAO {
     }
 
     public boolean actualizar(Pension pension) {
-        String sql = "UPDATE pensiones SET fecha_fin = ?, monto = ?, estado = ? WHERE id = ?";
+        String sql = "UPDATE pensiones SET cliente_id = ?, vehiculo_id = ?, cajon_id = ?, " +
+                     "fecha_inicio = ?, fecha_fin = ?, monto = ?, estado = ? WHERE id = ?";
         
         try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
-            pstmt.setTimestamp(1, Timestamp.valueOf(pension.getFechaFin()));
-            pstmt.setDouble(2, pension.getMonto());
-            pstmt.setString(3, pension.getEstado());
-            pstmt.setInt(4, pension.getId());
+            pstmt.setInt(1, pension.getClienteId());
+            pstmt.setInt(2, pension.getVehiculoId());
+            pstmt.setInt(3, pension.getCajonId());
+            pstmt.setTimestamp(4, Timestamp.valueOf(pension.getFechaInicio()));
+            pstmt.setTimestamp(5, Timestamp.valueOf(pension.getFechaFin()));
+            pstmt.setDouble(6, pension.getMonto());
+            pstmt.setString(7, pension.getEstado());
+            pstmt.setInt(8, pension.getId());
             
             pstmt.executeUpdate();
             return true;

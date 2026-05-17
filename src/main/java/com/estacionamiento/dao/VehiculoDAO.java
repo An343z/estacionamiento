@@ -111,6 +111,25 @@ public boolean crear(Vehiculo vehiculo) {
         return vehiculos;
     }
 
+    public List<Vehiculo> obtenerConHistorial() {
+        List<Vehiculo> vehiculos = new ArrayList<>();
+        String sql =
+                "SELECT DISTINCT v.* FROM vehiculos v " +
+                "INNER JOIN registros_entrada_salida r ON r.vehiculo_id = v.id " +
+                "WHERE v.activo = true ORDER BY v.patente";
+
+        try (Statement stmt = conexion.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                vehiculos.add(mapearResultSet(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al obtener vehiculos con historial: " + e.getMessage());
+        }
+        return vehiculos;
+    }
+
     public boolean actualizar(Vehiculo vehiculo) {
         String sql = "UPDATE vehiculos SET patente = ?, marca = ?, modelo = ?, color = ?, tipo = ? WHERE id = ?";
         

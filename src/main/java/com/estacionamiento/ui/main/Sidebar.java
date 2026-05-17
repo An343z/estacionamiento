@@ -136,6 +136,9 @@ public class Sidebar extends VBox {
         String seccionActual = "";
 
         for (Modulo m : Modulo.values()) {
+            if (m == Modulo.CLIENTES)
+                continue;
+
             if (!tienePermiso(m))
                 continue;
 

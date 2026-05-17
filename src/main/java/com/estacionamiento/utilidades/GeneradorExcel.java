@@ -518,6 +518,90 @@ public class GeneradorExcel {
         }
     }
 
+    public boolean generarTablasSeleccionadasExcel(List<String> tablas, Integer estacionamientoId) {
+        if (tablas == null || tablas.isEmpty()) {
+            return false;
+        }
+
+        try {
+            String nombre = "Base_Seleccionada_" + LocalDate.now() + ".xlsx";
+            String rutaCompleta = rutaSalida + File.separator + nombre;
+            File archivo = new File(rutaCompleta);
+            archivo.getParentFile().mkdirs();
+
+            try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+                for (String tabla : tablas) {
+                    exportarTabla(workbook, tabla, estacionamientoId);
+                }
+                try (FileOutputStream out = new FileOutputStream(archivo)) {
+                    workbook.write(out);
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            System.err.println("Error al exportar tablas seleccionadas: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private void exportarTabla(XSSFWorkbook workbook, String tabla, Integer estacionamientoId) throws SQLException {
+        String sql = "SELECT * FROM `" + tabla + "`";
+        if (estacionamientoId != null && tablaTieneColumna(tabla, "estacionamiento_id")) {
+            sql += " WHERE estacionamiento_id = ?";
+        }
+
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            if (estacionamientoId != null && tablaTieneColumna(tabla, "estacionamiento_id")) {
+                st.setInt(1, estacionamientoId);
+            }
+
+            try (ResultSet rs = st.executeQuery()) {
+                ResultSetMetaData rsmd = rs.getMetaData();
+                int columnas = rsmd.getColumnCount();
+                Sheet sheet = workbook.createSheet(tabla.length() > 31 ? tabla.substring(0, 31) : tabla);
+                CellStyle headerStyle = workbook.createCellStyle();
+                Font font = workbook.createFont();
+                font.setBold(true);
+                headerStyle.setFont(font);
+
+                Row header = sheet.createRow(0);
+                for (int i = 1; i <= columnas; i++) {
+                    Cell cell = header.createCell(i - 1);
+                    cell.setCellValue(rsmd.getColumnName(i));
+                    cell.setCellStyle(headerStyle);
+                }
+
+                int rowNum = 1;
+                while (rs.next()) {
+                    Row row = sheet.createRow(rowNum++);
+                    for (int i = 1; i <= columnas; i++) {
+                        Object value = rs.getObject(i);
+                        row.createCell(i - 1).setCellValue(value != null ? String.valueOf(value) : "");
+                    }
+                }
+
+                for (int i = 0; i < columnas; i++) {
+                    sheet.autoSizeColumn(i);
+                }
+            }
+        }
+    }
+
+    private boolean tablaTieneColumna(String tabla, String columna) {
+        try (ResultSet rs = connection.getMetaData().getColumns(null, null, tabla, columna)) {
+            if (rs.next()) {
+                return true;
+            }
+        } catch (SQLException ignored) {
+        }
+
+        try (ResultSet rs = connection.getMetaData().getColumns(null, null, tabla.toLowerCase(), columna)) {
+            return rs.next();
+        } catch (SQLException ignored) {
+            return false;
+        }
+    }
+
     public boolean generarReporteIngresosBD(int estacionamientoId, LocalDate fechaInicio, LocalDate fechaFin) {
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
             List<RegistroEntradaSalida> registros = registroDAO.obtenerPorEstacionamiento(estacionamientoId);

@@ -3,9 +3,11 @@ package com.estacionamiento.controladores;
 import com.estacionamiento.dao.CorteCajaDAO;
 import com.estacionamiento.dao.LiquidacionRestauranteDAO;
 import com.estacionamiento.dao.PagoDAO;
+import com.estacionamiento.dao.RegistroEntradaSalidaDAO;
 import com.estacionamiento.modelos.CorteCaja;
 import com.estacionamiento.modelos.LiquidacionRestaurante;
 import com.estacionamiento.modelos.Pago;
+import com.estacionamiento.modelos.Pension;
 import com.estacionamiento.modelos.RegistroEntradaSalida;
 import com.estacionamiento.modelos.Usuario;
 
@@ -30,6 +32,7 @@ public class CajaController {
     private final PagoDAO       pagoDAO       = new PagoDAO();
     private final CorteCajaDAO  corteCajaDAO  = new CorteCajaDAO();
     private final LiquidacionRestauranteDAO liquidacionDAO = new LiquidacionRestauranteDAO();
+    private final RegistroEntradaSalidaDAO registroDAO = new RegistroEntradaSalidaDAO();
 
     // ════════════════════════════════════════════════════════
     //  PAGOS
@@ -133,6 +136,62 @@ public class CajaController {
             return pago;
         }
         return null;
+    }
+
+    public Pago registrarPagoPension(Pension pension, Usuario cajero) {
+        if (pension == null) {
+            throw new IllegalArgumentException("La pension no puede ser nula.");
+        }
+        if (cajero == null) {
+            throw new IllegalArgumentException("El cajero es obligatorio.");
+        }
+        if (cajero.getRol() != 3 && cajero.getRol() != 2 && cajero.getRol() != 1) {
+            throw new SecurityException("No tienes permiso para registrar pagos.");
+        }
+        if (!cajero.esAdminGlobal() && cajero.getEstacionamientoId() != null
+                && cajero.getEstacionamientoId() != pension.getEstacionamientoId()) {
+            throw new SecurityException("No puedes cobrar en un estacionamiento diferente al tuyo.");
+        }
+
+        LocalDateTime ahora = LocalDateTime.now();
+        RegistroEntradaSalida registro = new RegistroEntradaSalida(
+                pension.getVehiculoId(),
+                pension.getCajonId(),
+                ahora,
+                pension.getEstacionamientoId()
+        );
+        registro.setPromocionAplicada("PENSION #" + pension.getId());
+        int registroId = registroDAO.crearRetornandoId(registro);
+        if (registroId <= 0) {
+            throw new IllegalArgumentException("No se pudo crear el registro de cobro de pension.");
+        }
+        if (!registroDAO.finalizarRegistro(registroId, ahora, pension.getMonto(), "PENSION #" + pension.getId())) {
+            throw new IllegalArgumentException("No se pudo finalizar el registro de cobro de pension.");
+        }
+
+        registro.setId(registroId);
+        registro.setFechaSalida(ahora);
+        registro.setMonto(pension.getMonto());
+        registro.setEstado("Finalizado");
+
+        Pago pago = new Pago(
+                registro.getId(),
+                registro.getEstacionamientoId(),
+                cajero.getId(),
+                cajero.getNombre() + " " + cajero.getApellido(),
+                pension.getMonto(),
+                pension.getMonto(),
+                Pago.MetodoPago.EFECTIVO
+        );
+        pago.setNotas("Cobro de pension #" + pension.getId());
+        pago.setNumeroTicket(generarFolioTicket(registro.getEstacionamientoId()));
+
+        int id = pagoDAO.crear(pago);
+        if (id > 0) {
+            pago.setId(id);
+            return pago;
+        }
+        throw new IllegalArgumentException("No se pudo registrar el pago de la pension.");
     }
 
     /** Lista pagos del estacionamiento del cajero (o todos si es Admin Global) */
